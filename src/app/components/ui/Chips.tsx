@@ -11,11 +11,13 @@ export function ChipSelect({
   value,
   onChange,
   label,
+  getOptionLabel = (option) => option,
 }: {
   options: readonly string[];
   value: string | null;
   onChange: (v: string | null) => void;
   label: string;
+  getOptionLabel?: (option: string) => string;
 }) {
   return (
     <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-1.5">
@@ -30,7 +32,7 @@ export function ChipSelect({
             onClick={() => onChange(active ? null : o)}
             className={`${chip} ${active ? on : off}`}
           >
-            {o}
+            {getOptionLabel(o)}
           </button>
         );
       })}
@@ -44,11 +46,13 @@ export function ChipMultiSelect({
   value,
   onChange,
   label,
+  getOptionLabel = (option) => option,
 }: {
   options: readonly string[];
   value: string[];
   onChange: (v: string[]) => void;
   label: string;
+  getOptionLabel?: (option: string) => string;
 }) {
   return (
     <div role="group" aria-label={label} className="flex flex-wrap gap-1.5">
@@ -62,7 +66,7 @@ export function ChipMultiSelect({
             onClick={() => onChange(active ? value.filter((v) => v !== o) : [...value, o])}
             className={`${chip} ${active ? on : off}`}
           >
-            {o}
+            {getOptionLabel(o)}
           </button>
         );
       })}

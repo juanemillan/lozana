@@ -7,6 +7,7 @@ import { calcularVencimiento } from '@/lib/vencimiento';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from './AuthProvider';
 import { SkeletonMetricas } from './ui/Skeleton';
+import { useI18n } from '@/i18n/I18nProvider';
 
 function Metric({ num, label }: { num: number; label: string }) {
   return (
@@ -22,11 +23,15 @@ function Metric({ num, label }: { num: number; label: string }) {
  * modelo: aquí una IA sería más lenta, más cara y menos exacta que restar días.
  */
 function AvisoVencimiento({ vencidos, prontos }: { vencidos: number; prontos: number }) {
+  const { t } = useI18n();
   if (vencidos === 0 && prontos === 0) return null;
 
   const partes = [
-    vencidos > 0 && `${vencidos} ${vencidos === 1 ? 'vencido' : 'vencidos'}`,
-    prontos > 0 && `${prontos} por vencer`,
+    vencidos > 0 &&
+      t(vencidos === 1 ? 'summary.expired.one' : 'summary.expired.other', {
+        count: vencidos,
+      }),
+    prontos > 0 && t('summary.expiring', { count: prontos }),
   ].filter(Boolean);
 
   return (
@@ -46,7 +51,7 @@ function AvisoVencimiento({ vencidos, prontos }: { vencidos: number; prontos: nu
           aria-hidden
         />
         <span className={vencidos > 0 ? 'text-plum-deep' : 'text-clay-deep'}>
-          Tienes {partes.join(' y ')}.
+          {t('summary.notice', { items: partes.join(t('summary.joiner')) })}
         </span>
       </span>
       <ArrowRight
@@ -61,13 +66,14 @@ function AvisoVencimiento({ vencidos, prontos }: { vencidos: number; prontos: nu
 
 /** Aparece mientras el perfil siga incompleto, incluido si postergaste el onboarding. */
 function PerfilPendiente() {
+  const { t } = useI18n();
   return (
     <Link
       href="/perfil"
       className="mb-4 flex items-center justify-between gap-3 rounded-[10px] border border-dashed border-clay bg-clay-tint px-3.5 py-3 transition-colors hover:bg-clay/25"
     >
       <span className="text-[13px] text-clay-deep">
-        Tu perfil está incompleto. Completarlo mejora lo que el asistente pueda recomendarte.
+        {t('summary.incomplete')}
       </span>
       <ArrowRight size={15} strokeWidth={1.75} className="shrink-0 text-clay-deep" aria-hidden />
     </Link>
@@ -75,6 +81,7 @@ function PerfilPendiente() {
 }
 
 export function Resumen() {
+  const { t } = useI18n();
   const { profile } = useAuth();
   const [m, setM] = useState({ activos: 0, pendientes: 0, foods: 0, exercises: 0 });
   const [caducidad, setCaducidad] = useState({ vencidos: 0, prontos: 0 });
@@ -118,10 +125,10 @@ export function Resumen() {
       <AvisoVencimiento vencidos={caducidad.vencidos} prontos={caducidad.prontos} />
 
       <div className="anim-lista grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Metric num={m.activos} label="Productos activos" />
-        <Metric num={m.pendientes} label="Pendientes" />
-        <Metric num={m.foods} label="Ítems alimentación" />
-        <Metric num={m.exercises} label="Hábitos de ejercicio" />
+        <Metric num={m.activos} label={t('summary.activeProducts')} />
+        <Metric num={m.pendientes} label={t('summary.pending')} />
+        <Metric num={m.foods} label={t('summary.foodItems')} />
+        <Metric num={m.exercises} label={t('summary.exerciseHabits')} />
       </div>
     </div>
   );

@@ -8,16 +8,13 @@ import { Wordmark } from './Nav';
 import { Input, Label, Textarea } from './ui/Field';
 import { Button } from './ui/Button';
 import { ChipSelect, ChipMultiSelect } from './ui/Chips';
+import { LanguageSelector } from './LanguageSelector';
+import { useI18n } from '@/i18n/I18nProvider';
 
 export const SKIP_KEY = 'lozana:onboarding-skipped';
 
-const PASOS = [
-  { titulo: 'Empecemos por vos', sub: 'Para saber cómo llamarte.' },
-  { titulo: 'Tu piel', sub: 'Lo que más define qué te sirve y qué no.' },
-  { titulo: 'Qué cuidar', sub: 'Opcional, pero es lo que más ayuda después.' },
-];
-
 export function Onboarding({ onDone }: { onDone: () => void }) {
+  const { t, label } = useI18n();
   const { user, refreshProfile } = useAuth();
   const [paso, setPaso] = useState(0);
   const [avanzando, setAvanzando] = useState(true);
@@ -68,16 +65,24 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
     onDone();
   }
 
-  const ultimo = paso === PASOS.length - 1;
+  const pasos = [
+    { titulo: t('onboarding.step1.title'), sub: t('onboarding.step1.subtitle') },
+    { titulo: t('onboarding.step2.title'), sub: t('onboarding.step2.subtitle') },
+    { titulo: t('onboarding.step3.title'), sub: t('onboarding.step3.subtitle') },
+  ];
+  const ultimo = paso === pasos.length - 1;
 
   return (
     <div className="flex min-h-screen items-center justify-center px-5 py-10">
       <div className="anim-subir w-full max-w-md rounded-[10px] border border-line bg-surface p-6">
-        <Wordmark className="mb-5 block" />
+        <div className="mb-5 flex items-center justify-between gap-3">
+          <Wordmark />
+          <LanguageSelector />
+        </div>
 
         {/* Progreso */}
         <div className="mb-5 flex gap-1.5">
-          {PASOS.map((_, i) => (
+          {pasos.map((_, i) => (
             <div
               key={i}
               className={`h-1 flex-1 rounded-full transition-colors duration-[400ms] ease-suave ${
@@ -93,25 +98,25 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
           key={paso}
           className={`min-h-64 ${avanzando ? 'anim-entrar-derecha' : 'anim-entrar-izquierda'}`}
         >
-          <h2 className="text-xl">{PASOS[paso].titulo}</h2>
-          <p className="mt-1 mb-5 text-[13px] text-ink-soft">{PASOS[paso].sub}</p>
+          <h2 className="text-xl">{pasos[paso].titulo}</h2>
+          <p className="mt-1 mb-5 text-[13px] text-ink-soft">{pasos[paso].sub}</p>
 
           {paso === 0 && (
           <div className="flex flex-col gap-4">
             <div>
-              <Label htmlFor="nombre">¿Cómo te llamás?</Label>
+              <Label htmlFor="nombre">{t('onboarding.nameQuestion')}</Label>
               <Input
                 id="nombre"
                 value={draft.full_name ?? ''}
                 onChange={(e) => set('full_name', e.target.value)}
-                placeholder="Tu nombre"
+                placeholder={t('onboarding.yourName')}
                 autoFocus
               />
             </div>
             <div>
-              <Label>Rango de edad</Label>
+              <Label>{t('profile.ageRange')}</Label>
               <ChipSelect
-                label="Rango de edad"
+                label={t('profile.ageRange')}
                 options={AGE_RANGES}
                 value={draft.age_range}
                 onChange={(v) => set('age_range', v)}
@@ -123,21 +128,23 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
         {paso === 1 && (
           <div className="flex flex-col gap-4">
             <div>
-              <Label>Tipo de piel</Label>
+              <Label>{t('profile.skinType')}</Label>
               <ChipSelect
-                label="Tipo de piel"
+                label={t('profile.skinType')}
                 options={SKIN_TYPES}
                 value={draft.skin_type}
                 onChange={(v) => set('skin_type', v)}
+                getOptionLabel={label}
               />
             </div>
             <div>
-              <Label>¿Qué te preocupa? Podés elegir varias</Label>
+              <Label>{t('profile.concernsQuestion')}</Label>
               <ChipMultiSelect
-                label="Preocupaciones"
+                label={t('profile.concerns')}
                 options={CONCERNS}
                 value={draft.concerns}
                 onChange={(v) => set('concerns', v)}
+                getOptionLabel={label}
               />
             </div>
           </div>
@@ -146,22 +153,22 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
         {paso === 2 && (
           <div className="flex flex-col gap-4">
             <div>
-              <Label htmlFor="sens">Alergias o ingredientes que te irritan</Label>
+              <Label htmlFor="sens">{t('profile.sensitivities')}</Label>
               <Textarea
                 id="sens"
                 value={draft.sensitivities ?? ''}
                 onChange={(e) => set('sensitivities', e.target.value)}
-                placeholder="Ej: fragancia, alcohol denat., ácido salicílico..."
+                placeholder={t('profile.sensitivitiesExample')}
                 rows={2}
               />
             </div>
             <div>
-              <Label htmlFor="obj">¿Qué te gustaría lograr?</Label>
+              <Label htmlFor="obj">{t('profile.goalQuestion')}</Label>
               <Textarea
                 id="obj"
                 value={draft.goal ?? ''}
                 onChange={(e) => set('goal', e.target.value)}
-                placeholder="Ej: emparejar el tono y que la piel se vea más firme"
+                placeholder={t('profile.goalExample')}
                 rows={2}
               />
             </div>
@@ -181,21 +188,21 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
             onClick={skip}
             className="cursor-pointer font-mono text-[11px] text-ink-soft underline underline-offset-2 hover:text-ink"
           >
-            Después
+            {t('onboarding.later')}
           </button>
 
           <div className="flex gap-2">
             {paso > 0 && (
               <Button variant="ghost" onClick={() => irA(paso - 1)}>
-                Atrás
+                {t('onboarding.back')}
               </Button>
             )}
             {ultimo ? (
               <Button onClick={guardar} disabled={busy}>
-                {busy ? 'Guardando...' : 'Listo'}
+                {busy ? t('common.saving') : t('onboarding.done')}
               </Button>
             ) : (
-              <Button onClick={() => irA(paso + 1)}>Siguiente</Button>
+              <Button onClick={() => irA(paso + 1)}>{t('onboarding.next')}</Button>
             )}
           </div>
         </div>

@@ -68,23 +68,3 @@ export function calcularVencimiento(p: {
     estado: dias < 0 ? 'vencido' : dias <= DIAS_AVISO ? 'pronto' : 'vigente',
   };
 }
-
-/** Texto corto para la píldora de la tarjeta. */
-export function etiquetaVencimiento(v: Vencimiento): string | null {
-  if (v.estado === 'vencido') {
-    const d = Math.abs(v.dias ?? 0);
-    return d === 0 ? 'Vence hoy' : `Venció hace ${d} ${d === 1 ? 'día' : 'días'}`;
-  }
-  if (v.estado === 'pronto') {
-    const d = v.dias ?? 0;
-    return d === 0 ? 'Vence hoy' : `Vence en ${d} ${d === 1 ? 'día' : 'días'}`;
-  }
-  return null;
-}
-
-/** Precio por mililitro, que es la cifra realmente comparable entre productos. */
-export function precioPorUnidad(price?: number | null, sizeMl?: number | null): string | null {
-  if (price == null || !sizeMl) return null;
-  const v = price / sizeMl;
-  return `$${v < 1 ? v.toFixed(2) : v.toFixed(1)}/ml`;
-}

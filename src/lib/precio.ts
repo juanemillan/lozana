@@ -17,13 +17,17 @@ export const MONEDAS = [
 export const UNIDADES = ['ml', 'g', 'unidad'] as const;
 export type Unidad = (typeof UNIDADES)[number];
 
-export function formatearPrecio(price?: number | null, currency?: string | null): string | null {
+export function formatearPrecio(
+  price?: number | null,
+  currency?: string | null,
+  locale = 'es',
+): string | null {
   if (price == null) return null;
   // Sin moneda (registros anteriores a 007) se muestra el número pelado antes
   // que inventar un símbolo.
   if (!currency) return String(price);
   try {
-    return new Intl.NumberFormat('es', { style: 'currency', currency }).format(price);
+    return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(price);
   } catch {
     return `${price} ${currency}`;
   }
@@ -43,11 +47,12 @@ export function precioPorUnidad(
   currency?: string | null,
   value?: number | null,
   unit?: string | null,
+  locale = 'es',
 ): string | null {
   if (price == null || !value || !unit) return null;
   const v = price / value;
   const formateado = currency
-    ? new Intl.NumberFormat('es', {
+    ? new Intl.NumberFormat(locale, {
         style: 'currency',
         currency,
         minimumFractionDigits: 0,

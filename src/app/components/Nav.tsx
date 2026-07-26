@@ -7,14 +7,7 @@ import { Sun, Droplet, Salad, Dumbbell, NotebookPen } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 import { Avatar } from './ui/Avatar';
 import { initials } from '@/lib/profile';
-
-const items = [
-  { href: '/', label: 'Hoy', icon: Sun },
-  { href: '/productos', label: 'Productos', icon: Droplet },
-  { href: '/alimentacion', label: 'Alimentación', icon: Salad },
-  { href: '/ejercicio', label: 'Ejercicio', icon: Dumbbell },
-  { href: '/bitacora', label: 'Bitácora', icon: NotebookPen },
-];
+import { useI18n } from '@/i18n/I18nProvider';
 
 function isActive(pathname: string, href: string) {
   return href === '/' ? pathname === '/' : pathname.startsWith(href);
@@ -45,6 +38,7 @@ export function Wordmark({ className = '' }: { className?: string }) {
 /** Bloque de identidad al pie de la sidebar: avatar, nombre y correo. */
 function PerfilSidebar({ activo }: { activo: boolean }) {
   const { user, profile } = useAuth();
+  const { t } = useI18n();
   if (!user) return null;
 
   return (
@@ -58,7 +52,7 @@ function PerfilSidebar({ activo }: { activo: boolean }) {
       <Avatar path={profile?.avatar_path ?? null} fallback={initials(profile, user.email)} />
       <span className="min-w-0">
         <span className="block truncate text-[13px] font-medium text-ink">
-          {profile?.full_name || 'Mi perfil'}
+          {profile?.full_name || t('profile.myProfile')}
         </span>
         <span className="block truncate font-mono text-[10px]">{user.email}</span>
       </span>
@@ -68,6 +62,14 @@ function PerfilSidebar({ activo }: { activo: boolean }) {
 
 export function Nav() {
   const pathname = usePathname();
+  const { t } = useI18n();
+  const items = [
+    { href: '/', label: t('nav.today'), icon: Sun },
+    { href: '/productos', label: t('nav.products'), icon: Droplet },
+    { href: '/alimentacion', label: t('nav.food'), icon: Salad },
+    { href: '/ejercicio', label: t('nav.exercise'), icon: Dumbbell },
+    { href: '/bitacora', label: t('nav.log'), icon: NotebookPen },
+  ];
 
   return (
     <>

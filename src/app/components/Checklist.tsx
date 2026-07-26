@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from './AuthProvider';
 import { SectionTitle, EmptyState } from './ui/SectionTitle';
 import { Skeleton, CargandoTexto } from './ui/Skeleton';
+import { useI18n } from '@/i18n/I18nProvider';
 
 type ChecklistItem = {
   product_id: string;
@@ -43,6 +44,7 @@ function ToggleSlot({
 }
 
 export default function Checklist() {
+  const { t } = useI18n();
   const { user } = useAuth();
   const [items, setItems] = useState<ChecklistItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -137,7 +139,7 @@ export default function Checklist() {
     return (
       <>
         <Skeleton filas={4} />
-        <CargandoTexto />
+        <CargandoTexto>{t('common.loading')}</CargandoTexto>
       </>
     );
 
@@ -147,15 +149,17 @@ export default function Checklist() {
         action={
           <span className="inline-flex items-center gap-1.5 font-mono text-xs text-clay-deep">
             <Flame size={14} strokeWidth={1.75} aria-hidden />
-            {streak} {streak === 1 ? 'día' : 'días'} seguidos
+            {t(streak === 1 ? 'checklist.streak.one' : 'checklist.streak.other', {
+              count: streak,
+            })}
           </span>
         }
       >
-        Hoy
+        {t('nav.today')}
       </SectionTitle>
 
       {items.length === 0 ? (
-        <EmptyState>Sin productos activos. Agregá algunos en Productos.</EmptyState>
+        <EmptyState>{t('checklist.empty')}</EmptyState>
       ) : (
         <div className="anim-lista overflow-hidden rounded-[10px] border border-line bg-surface">
           {items.map((item) => (

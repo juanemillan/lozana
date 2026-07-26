@@ -5,22 +5,25 @@ import { supabase } from '@/lib/supabase';
 import { Wordmark } from './Nav';
 import { Input, Label } from './ui/Field';
 import { Button } from './ui/Button';
+import { LanguageSelector } from './LanguageSelector';
+import { useI18n } from '@/i18n/I18nProvider';
 
 type Mode = 'login' | 'signup';
 
-function traducir(mensaje: string) {
-  if (mensaje === 'Invalid login credentials') return 'Email o contraseña incorrectos.';
-  if (/already registered/i.test(mensaje)) return 'Ese email ya está registrado. Entrá con tu contraseña.';
+function traducir(mensaje: string, t: (key: string) => string) {
+  if (mensaje === 'Invalid login credentials') return t('auth.invalid');
+  if (/already registered/i.test(mensaje)) return t('auth.registered');
   if (/signups not allowed/i.test(mensaje))
-    return 'El registro está cerrado. Activalo en Supabase → Authentication → Providers → Email.';
+    return t('auth.closed');
   if (/password should be at least/i.test(mensaje))
-    return 'La contraseña necesita al menos 6 caracteres.';
+    return t('auth.shortPassword');
   if (/email not confirmed/i.test(mensaje))
-    return 'Falta confirmar el email. Revisá tu bandeja de entrada.';
+    return t('auth.unconfirmed');
   return mensaje;
 }
 
 export function LoginForm() {
+  const { t } = useI18n();
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -44,7 +47,7 @@ export function LoginForm() {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       // Si sale bien no toco el estado: onAuthStateChange desmonta este form.
       if (error) {
-        setError(traducir(error.message));
+        setError(traducir(error.message, t));
         setBusy(false);
       }
       return;
@@ -53,7 +56,7 @@ export function LoginForm() {
     const { data, error } = await supabase.auth.signUp({ email, password });
 
     if (error) {
-      setError(traducir(error.message));
+      setError(traducir(error.message, t));
       setBusy(false);
       return;
     }
@@ -61,14 +64,14 @@ export function LoginForm() {
     // Con "Confirm email" activo y el mail ya registrado, Supabase responde OK
     // pero sin identities, para no delatar qué direcciones existen.
     if (data.user && data.user.identities?.length === 0) {
-      setError('Ese email ya está registrado. Entrá con tu contraseña.');
+      setError(t('auth.registered'));
       setMode('login');
       setBusy(false);
       return;
     }
 
     if (!data.session) {
-      setAviso('Cuenta creada. Te llegó un mail para confirmar la dirección; después entrá acá.');
+      setAviso(t('auth.created'));
       setMode('login');
       setBusy(false);
     }
@@ -83,13 +86,16 @@ export function LoginForm() {
         onSubmit={handleSubmit}
         className="anim-subir w-full max-w-80 rounded-[10px] border border-line bg-surface p-6"
       >
-        <Wordmark className="mb-1 block" />
+        <div className="mb-1 flex items-center justify-between gap-3">
+          <Wordmark />
+          <LanguageSelector />
+        </div>
         <p className="mb-5 text-[13px] text-ink-soft">
-          {esRegistro ? 'Creá tu cuenta' : 'Bitácora de piel'}
+          {esRegistro ? t('auth.createAccount') : t('app.subtitle')}
         </p>
 
         <div className="mb-3">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">{t('auth.email')}</Label>
           <Input
             id="email"
             type="email"
@@ -102,7 +108,7 @@ export function LoginForm() {
         </div>
 
         <div className="mb-4">
-          <Label htmlFor="password">Contraseña</Label>
+          <Label htmlFor="password">{t('auth.password')}</Label>
           <Input
             id="password"
             type="password"
@@ -112,7 +118,7 @@ export function LoginForm() {
             minLength={esRegistro ? 6 : undefined}
             required
           />
-          {esRegistro && <p className="mt-1 text-[11px] text-ink-soft">Mínimo 6 caracteres.</p>}
+          {esRegistro && <p className="mt-1 text-[11px] text-ink-soft">{t('auth.passwordHint')}</p>}
         </div>
 
         {error && (
@@ -128,17 +134,23 @@ export function LoginForm() {
         )}
 
         <Button type="submit" disabled={busy} className="w-full">
-          {busy ? (esRegistro ? 'Creando...' : 'Entrando...') : esRegistro ? 'Registrarme' : 'Entrar'}
+          {busy
+            ? esRegistro
+              ? t('auth.creating')
+              : t('auth.entering')
+            : esRegistro
+              ? t('auth.signUp')
+              : t('auth.signIn')}
         </Button>
 
         <p className="mt-4 text-center text-xs text-ink-soft">
-          {esRegistro ? '¿Ya tenés cuenta?' : '¿Todavía no tenés cuenta?'}{' '}
+          {esRegistro ? t('auth.haveAccount') : t('auth.noAccount')}{' '}
           <button
             type="button"
             onClick={() => switchMode(esRegistro ? 'login' : 'signup')}
             className="cursor-pointer text-sage-deep underline underline-offset-2 hover:text-sage"
           >
-            {esRegistro ? 'Entrar' : 'Registrarme'}
+            {esRegistro ? t('auth.signIn') : t('auth.signUp')}
           </button>
         </p>
       </form>

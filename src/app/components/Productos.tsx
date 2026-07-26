@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { X, Plus, Pencil, ImagePlus, Camera, ExternalLink, ChevronDown } from 'lucide-react';
-import { calcularVencimiento, etiquetaVencimiento } from '@/lib/vencimiento';
+import { calcularVencimiento } from '@/lib/vencimiento';
 import {
   MONEDAS,
   UNIDADES,
@@ -22,6 +22,7 @@ import { Input, Label, Select, Textarea } from './ui/Field';
 import { Autocomplete } from './ui/Autocomplete';
 import { valoresUsados, normalizar } from '@/lib/sugerencias';
 import { Thumb } from './ui/Avatar';
+import { useI18n } from '@/i18n/I18nProvider';
 
 const CATEGORIES = [
   'Limpiador',
@@ -84,14 +85,32 @@ const EMPTY: Draft = {
 
 /** Solo aparece cuando hay algo que avisar; si está vigente no ocupa espacio. */
 function VencimientoPill({ producto }: { producto: Product }) {
+  const { t } = useI18n();
   const v = calcularVencimiento(producto);
-  const texto = etiquetaVencimiento(v);
+  let texto: string | null = null;
+  if (v.estado === 'vencido') {
+    const dias = Math.abs(v.dias ?? 0);
+    texto =
+      dias === 0
+        ? t('products.expiry.today')
+        : t(dias === 1 ? 'products.expiry.past.one' : 'products.expiry.past.other', {
+            count: dias,
+          });
+  } else if (v.estado === 'pronto') {
+    const dias = v.dias ?? 0;
+    texto =
+      dias === 0
+        ? t('products.expiry.today')
+        : t(dias === 1 ? 'products.expiry.future.one' : 'products.expiry.future.other', {
+            count: dias,
+          });
+  }
   if (!texto) return null;
 
   return (
     <Pill tone={v.estado === 'vencido' ? 'plum' : 'clay'}>
       {texto}
-      {v.origen === 'pao' && ' · desde apertura'}
+      {v.origen === 'pao' && ` · ${t('products.expiry.opened')}`}
     </Pill>
   );
 }
@@ -104,6 +123,7 @@ function aNumero(v: string): number | null {
 }
 
 export default function Productos() {
+  const { t, label, locale } = useI18n();
   const { user } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -195,10 +215,10 @@ export default function Productos() {
     // Mismas reglas que los constraints de 007, comprobadas antes para dar un
     // mensaje en castellano en vez del error crudo de Postgres.
     if (form.price != null && !form.currency_code) {
-      return setAviso('Elige la moneda del precio.');
+      return setAviso(t('products.chooseCurrency'));
     }
     if (form.size_value != null && !form.size_unit) {
-      return setAviso('Elige la unidad del tamaño.');
+      return setAviso(t('products.chooseUnit'));
     }
 
     setGuardando(true);
@@ -245,17 +265,17 @@ export default function Productos() {
     setGuardando(false);
     // El producto sí quedó guardado: cerrar el formulario evita que reintentar
     // cree un duplicado, y el aviso explica qué faltó.
-    setAviso(fotoFallo ? 'El producto se guardó, pero la foto no se pudo subir. Edítalo para reintentar.' : null);
+    setAviso(fotoFallo ? t('products.photoFailed') : null);
   }
 
   function fallar(mensaje: string) {
     setGuardando(false);
-    setAviso(`No se pudo guardar: ${mensaje}`);
+    setAviso(t('products.saveFailed', { message: mensaje }));
   }
 
   async function deleteProduct(id: string) {
     const { error } = await supabase.from('products').delete().eq('id', id);
-    if (error) setAviso(`No se pudo eliminar: ${error.message}`);
+    if (error) setAviso(t('products.deleteFailed', { message: error.message }));
     else {
       setExpandedId((actual) => (actual === id ? null : actual));
       fetchProducts();
@@ -287,7 +307,7 @@ export default function Productos() {
     return (
       <>
         <Skeleton filas={4} />
-        <CargandoTexto />
+        <CargandoTexto>{t('common.loading')}</CargandoTexto>
       </>
     );
 
@@ -297,11 +317,11 @@ export default function Productos() {
         action={
           <Button onClick={() => (open ? cerrar() : nuevo())}>
             <Plus size={13} strokeWidth={2.25} aria-hidden />
-            Agregar
+            {t('common.add')}
           </Button>
         }
       >
-        Productos
+        {t('products.title')}
       </SectionTitle>
 
       {/* Fuera del Collapse: un fallo al subir la foto cierra el formulario
@@ -324,37 +344,37 @@ export default function Productos() {
             <Input
               value={form.name}
               onChange={(e) => set('name', e.target.value)}
-              placeholder="Nombre del producto"
-              aria-label="Nombre"
+              placeholder={t('products.name')}
+              aria-label={t('products.name')}
             />
             <Autocomplete
               value={form.brand ?? ''}
               onChange={(v) => set('brand', v)}
               options={marcasUsadas}
-              placeholder="Marca"
-              aria-label="Marca"
+              placeholder={t('products.brand')}
+              aria-label={t('products.brand')}
             />
             <Autocomplete
               value={form.product_line ?? ''}
               onChange={(v) => set('product_line', v)}
               options={lineasUsadas}
-              placeholder="Línea (opcional)"
-              aria-label="Línea"
+              placeholder={t('products.lineOptional')}
+              aria-label={t('products.line')}
               className="sm:col-span-2"
             />
             <Select
               value={form.category}
               onChange={(e) => set('category', e.target.value)}
-              aria-label="Categoría"
+              aria-label={t('products.category')}
             >
               {CATEGORIES.map((c) => (
-                <option key={c}>{c}</option>
+                <option key={c} value={c}>{label(c)}</option>
               ))}
             </Select>
             <Select
               value={form.time_of_day}
               onChange={(e) => set('time_of_day', e.target.value)}
-              aria-label="Momento del día"
+              aria-label={t('products.time')}
             >
               {TIMES.map((t) => (
                 <option key={t}>{t}</option>
@@ -364,30 +384,30 @@ export default function Productos() {
               value={form.frequency}
               onChange={(v) => set('frequency', v)}
               options={frecuenciasUsadas}
-              placeholder="Frecuencia (ej: Diario, 2x/semana)"
-              aria-label="Frecuencia"
+              placeholder={t('products.frequencyExample')}
+              aria-label={t('common.frequency')}
             />
             <Select
               value={form.status}
               onChange={(e) => set('status', e.target.value)}
-              aria-label="Estado"
+              aria-label={t('products.status')}
             >
               {STATUSES.map((s) => (
-                <option key={s}>{s}</option>
+                <option key={s} value={s}>{label(s)}</option>
               ))}
             </Select>
             <Input
               value={form.description ?? ''}
               onChange={(e) => set('description', e.target.value)}
-              placeholder="Descripción: qué es. Ej: sérum facial con retinal"
-              aria-label="Descripción"
+              placeholder={t('products.descriptionExample')}
+              aria-label={t('products.description')}
               className="sm:col-span-2"
             />
             <Textarea
               value={form.notes ?? ''}
               onChange={(e) => set('notes', e.target.value)}
-              placeholder="Notas: cómo te va con él. Ej: empezar dos noches por semana y observar tolerancia"
-              aria-label="Notas"
+              placeholder={t('products.notesExample')}
+              aria-label={t('common.notes')}
               className="sm:col-span-2"
             />
           </div>
@@ -405,14 +425,14 @@ export default function Productos() {
             <div className="flex flex-wrap gap-x-3 gap-y-1">
               <label className="inline-flex cursor-pointer items-center gap-1.5 font-mono text-[11px] text-ink-soft transition-colors hover:text-sage-deep">
                 <ImagePlus size={13} strokeWidth={1.75} aria-hidden />
-                {previo ? 'Cambiar foto' : 'Subir foto'}
+                {previo ? t('profile.changePhoto') : t('profile.uploadPhoto')}
                 <input type="file" accept="image/*" className="sr-only" onChange={elegirFoto} />
               </label>
               {/* capture solo lo honra el móvil; en escritorio abriría el mismo
                   explorador que el botón de al lado. */}
               <label className="inline-flex cursor-pointer items-center gap-1.5 font-mono text-[11px] text-ink-soft transition-colors hover:text-sage-deep md:hidden">
                 <Camera size={13} strokeWidth={1.75} aria-hidden />
-                Tomar foto
+                {t('profile.takePhoto')}
                 <input
                   type="file"
                   accept="image/*"
@@ -423,14 +443,14 @@ export default function Productos() {
               </label>
               {previo && (
                 <p className="w-full font-mono text-[11px] text-ink-soft">
-                  Se sube al guardar.
+                  {t('products.photoPending')}
                 </p>
               )}
             </div>
           </div>
 
           <p className="mt-4 mb-2 border-t border-line pt-3 font-mono text-[11px] uppercase tracking-wide text-ink-soft">
-            Compra y vencimiento
+            {t('products.purchaseExpiry')}
           </p>
 
           <div className="mb-2 grid gap-2 sm:grid-cols-2">
@@ -444,13 +464,13 @@ export default function Productos() {
                 min="0"
                 value={form.price ?? ''}
                 onChange={(e) => set('price', aNumero(e.target.value))}
-                placeholder="Precio"
-                aria-label="Precio"
+                placeholder={t('products.price')}
+                aria-label={t('products.price')}
               />
               <Select
                 value={form.currency_code ?? ''}
                 onChange={(e) => set('currency_code', e.target.value || null)}
-                aria-label="Moneda"
+                aria-label={t('products.currency')}
                 className="px-1.5"
               >
                 <option value="">—</option>
@@ -467,18 +487,18 @@ export default function Productos() {
                 min="0"
                 value={form.size_value ?? ''}
                 onChange={(e) => set('size_value', aNumero(e.target.value))}
-                placeholder="Tamaño"
-                aria-label="Tamaño"
+                placeholder={t('products.size')}
+                aria-label={t('products.size')}
               />
               <Select
                 value={form.size_unit ?? ''}
                 onChange={(e) => set('size_unit', e.target.value || null)}
-                aria-label="Unidad"
+                aria-label={t('products.unit')}
                 className="px-1.5"
               >
                 <option value="">—</option>
                 {UNIDADES.map((u) => (
-                  <option key={u}>{u}</option>
+                  <option key={u} value={u}>{label(u)}</option>
                 ))}
               </Select>
             </div>
@@ -486,13 +506,13 @@ export default function Productos() {
               type="url"
               value={form.purchase_url ?? ''}
               onChange={(e) => set('purchase_url', e.target.value)}
-              placeholder="Link donde lo compraste"
-              aria-label="Link de compra"
+              placeholder={t('products.purchaseLink')}
+              aria-label={t('products.purchaseLinkLabel')}
               className="sm:col-span-2"
             />
 
             <div>
-              <Label htmlFor="abierto">Fecha en que lo abriste</Label>
+              <Label htmlFor="abierto">{t('products.openedAt')}</Label>
               <Input
                 id="abierto"
                 type="date"
@@ -502,7 +522,7 @@ export default function Productos() {
             </div>
             <div>
               {/* El PAO es el símbolo del tarrito abierto con "6M" o "12M". */}
-              <Label htmlFor="pao">Meses de uso tras abrir (PAO)</Label>
+              <Label htmlFor="pao">{t('products.pao')}</Label>
               <Input
                 id="pao"
                 type="number"
@@ -514,7 +534,7 @@ export default function Productos() {
               />
             </div>
             <div>
-              <Label htmlFor="vence">Vencimiento impreso</Label>
+              <Label htmlFor="vence">{t('products.expiresAt')}</Label>
               <Input
                 id="vence"
                 type="date"
@@ -523,7 +543,7 @@ export default function Productos() {
               />
             </div>
             <div>
-              <Label htmlFor="recompra">¿Lo volverías a comprar?</Label>
+              <Label htmlFor="recompra">{t('products.repurchase')}</Label>
               <Select
                 id="recompra"
                 value={form.repurchase === null ? '' : form.repurchase ? 'si' : 'no'}
@@ -531,25 +551,29 @@ export default function Productos() {
                   set('repurchase', e.target.value === '' ? null : e.target.value === 'si')
                 }
               >
-                <option value="">Sin decidir</option>
-                <option value="si">Sí</option>
-                <option value="no">No</option>
+                <option value="">{t('products.undecided')}</option>
+                <option value="si">{t('common.yes')}</option>
+                <option value="no">{t('common.no')}</option>
               </Select>
             </div>
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={cerrar} disabled={guardando}>
-              Cancelar
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={guardando}>
-              {guardando ? 'Guardando...' : editing ? 'Guardar cambios' : 'Guardar'}
+              {guardando
+                ? t('common.saving')
+                : editing
+                  ? t('common.saveChanges')
+                  : t('common.save')}
             </Button>
           </div>
         </form>
       </Collapse>
 
       {products.length === 0 ? (
-        <EmptyState>Nada agregado todavía.</EmptyState>
+        <EmptyState>{t('products.empty')}</EmptyState>
       ) : (
         <div className="anim-lista">
           {products.map((p) => {
@@ -557,9 +581,15 @@ export default function Productos() {
             const panelId = `producto-detalle-${p.id}`;
             const jerarquia = [p.brand, p.product_line].filter(Boolean).join(' · ');
             const compra = [
-              formatearPrecio(p.price, p.currency_code),
-              formatearTamano(p.size_value, p.size_unit),
-              precioPorUnidad(p.price, p.currency_code, p.size_value, p.size_unit),
+              formatearPrecio(p.price, p.currency_code, locale),
+              formatearTamano(p.size_value, p.size_unit ? label(p.size_unit) : p.size_unit),
+              precioPorUnidad(
+                p.price,
+                p.currency_code,
+                p.size_value,
+                p.size_unit ? label(p.size_unit) : p.size_unit,
+                locale,
+              ),
             ]
               .filter(Boolean)
               .join(' · ');
@@ -623,7 +653,7 @@ export default function Productos() {
                 >
                   <div inert={!expanded} className="overflow-hidden">
                     <div className="border-t border-line px-3.5 pt-3 pb-3">
-                      <CardMeta>{[p.category, compra].filter(Boolean).join(' · ')}</CardMeta>
+                      <CardMeta>{[label(p.category), compra].filter(Boolean).join(' · ')}</CardMeta>
                       {p.description && <CardMeta>{p.description}</CardMeta>}
                       {p.notes && <CardNotes>{p.notes}</CardNotes>}
 
@@ -635,23 +665,24 @@ export default function Productos() {
                           className="mt-2 inline-flex items-center gap-1 font-mono text-[11px] text-sage-deep underline underline-offset-2 transition-colors hover:text-sage"
                         >
                           <ExternalLink size={11} strokeWidth={1.75} aria-hidden />
-                          Dónde lo compré
+                          {t('products.whereBought')}
                         </a>
                       )}
 
                       <div className="mt-3 flex justify-end gap-2 border-t border-line pt-3">
                         <Button variant="ghost" onClick={() => editar(p)}>
                           <Pencil size={13} strokeWidth={2} aria-hidden />
-                          Editar
+                          {t('common.edit')}
                         </Button>
                         <Button
                           variant="danger"
                           onClick={() => {
-                            if (window.confirm(`¿Eliminar “${p.name}”?`)) deleteProduct(p.id);
+                            if (window.confirm(t('products.confirmDelete', { name: p.name })))
+                              deleteProduct(p.id);
                           }}
                         >
                           <X size={13} strokeWidth={2} aria-hidden />
-                          Eliminar
+                          {t('common.delete')}
                         </Button>
                       </div>
                     </div>

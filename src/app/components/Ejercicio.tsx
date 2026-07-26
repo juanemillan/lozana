@@ -11,6 +11,7 @@ import { Skeleton, CargandoTexto } from './ui/Skeleton';
 import { Input, Textarea } from './ui/Field';
 import { Autocomplete } from './ui/Autocomplete';
 import { valoresUsados } from '@/lib/sugerencias';
+import { useI18n } from '@/i18n/I18nProvider';
 
 type Exercise = {
   id: string;
@@ -22,6 +23,7 @@ type Exercise = {
 const EMPTY = { name: '', frequency: '', notes: '' };
 
 export default function Ejercicio() {
+  const { t } = useI18n();
   const { user } = useAuth();
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,7 +90,7 @@ export default function Ejercicio() {
     return (
       <>
         <Skeleton filas={3} />
-        <CargandoTexto />
+        <CargandoTexto>{t('common.loading')}</CargandoTexto>
       </>
     );
 
@@ -98,11 +100,11 @@ export default function Ejercicio() {
         action={
           <Button onClick={() => (open ? cerrar() : nuevo())}>
             <Plus size={13} strokeWidth={2.25} aria-hidden />
-            Agregar
+            {t('common.add')}
           </Button>
         }
       >
-        Ejercicio y hábitos
+        {t('exercise.title')}
       </SectionTitle>
 
       <Collapse open={open}>
@@ -114,35 +116,37 @@ export default function Ejercicio() {
             <Input
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder="Actividad"
-              aria-label="Actividad"
+              placeholder={t('exercise.activity')}
+              aria-label={t('exercise.activity')}
             />
             <Autocomplete
               value={form.frequency}
               onChange={(v) => setForm({ ...form, frequency: v })}
               options={valoresUsados(exercises, (ex) => ex.frequency)}
-              placeholder="Frecuencia"
-              aria-label="Frecuencia"
+              placeholder={t('common.frequency')}
+              aria-label={t('common.frequency')}
             />
             <Textarea
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
-              placeholder="Notas"
-              aria-label="Notas"
+              placeholder={t('exercise.notesExample')}
+              aria-label={t('common.notes')}
               className="sm:col-span-2"
             />
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={cerrar}>
-              Cancelar
+              {t('common.cancel')}
             </Button>
-            <Button type="submit">{editing ? 'Guardar cambios' : 'Guardar'}</Button>
+            <Button type="submit">
+              {editing ? t('common.saveChanges') : t('common.save')}
+            </Button>
           </div>
         </form>
       </Collapse>
 
       {exercises.length === 0 ? (
-        <EmptyState>Nada agregado todavía.</EmptyState>
+        <EmptyState>{t('exercise.empty')}</EmptyState>
       ) : (
         <div className="anim-lista">
           {exercises.map((ex) => (
@@ -150,10 +154,10 @@ export default function Ejercicio() {
               key={ex.id}
               actions={
                 <>
-                  <IconButton label={`Editar ${ex.name}`} onClick={() => editar(ex)}>
+                  <IconButton label={t('actions.editNamed', { name: ex.name })} onClick={() => editar(ex)}>
                     <Pencil size={13} strokeWidth={2} aria-hidden />
                   </IconButton>
-                  <IconButton label={`Eliminar ${ex.name}`} onClick={() => deleteExercise(ex.id)}>
+                  <IconButton label={t('actions.deleteNamed', { name: ex.name })} onClick={() => deleteExercise(ex.id)}>
                     <X size={13} strokeWidth={2} aria-hidden />
                   </IconButton>
                 </>

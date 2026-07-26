@@ -10,16 +10,19 @@ import { Nav, Wordmark } from './Nav';
 import { DateStamp } from './DateStamp';
 import { Avatar } from './ui/Avatar';
 import { initials } from '@/lib/profile';
+import { LanguageSelector } from './LanguageSelector';
+import { useI18n } from '@/i18n/I18nProvider';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, profile, loading } = useAuth();
   const pathname = usePathname();
   const [skipped, setSkipped] = useState(false);
+  const { t } = useI18n();
 
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <p className="font-mono text-xs text-ink-soft">Cargando...</p>
+        <p className="font-mono text-xs text-ink-soft">{t('common.loading')}...</p>
       </div>
     );
   }
@@ -49,15 +52,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             className="mb-5 flex items-baseline justify-between gap-3 border-b-2 border-ink pb-3.5"
           >
             <Wordmark className="md:hidden" />
-            <h1 className="hidden text-[26px] md:block">Bitácora de piel</h1>
+            <h1 className="hidden text-[26px] md:block">{t('app.subtitle')}</h1>
 
             <div className="flex shrink-0 items-center gap-2 self-center">
+              <LanguageSelector />
               <DateStamp />
               {/* En escritorio el acceso al perfil vive al pie de la sidebar,
                   así que aquí solo aparece en móvil. */}
               <Link
                 href="/perfil"
-                aria-label="Perfil"
+                aria-label={t('nav.profile')}
                 aria-current={pathname === '/perfil' ? 'page' : undefined}
                 className="rounded-full transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sage md:hidden"
               >

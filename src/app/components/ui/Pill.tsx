@@ -1,3 +1,7 @@
+'use client';
+
+import { useI18n } from '@/i18n/I18nProvider';
+
 type Tone = 'sage' | 'sand' | 'clay' | 'plum';
 
 const tones: Record<Tone, string> = {
@@ -37,5 +41,6 @@ const statusTones: Record<string, Tone> = {
 };
 
 export function StatusPill({ status }: { status: string }) {
-  return <Pill tone={statusTones[status] ?? 'sand'}>{status}</Pill>;
+  const { label } = useI18n();
+  return <Pill tone={statusTones[status] ?? 'sand'}>{label(status)}</Pill>;
 }

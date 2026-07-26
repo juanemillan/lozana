@@ -14,14 +14,12 @@
 
 ## Idioma
 - **Español neutro, nunca variante argentina.** Aplica a las respuestas y a los textos de la app.
-- **Deuda conocida:** los textos actuales de la interfaz están en argentino ("Registrate",
-  "¿Cómo te llamás?", "Agregá algunos en Productos"). Se corrigen junto con el i18n, no antes,
-  para no hacer el trabajo dos veces.
+- **Español neutro aplicado:** se eliminaron las formas argentinas de todos los textos visibles.
 - Inglés como segundo idioma: detección por header `Accept-Language`, español de respaldo,
-  selector manual guardado en cookie. **Sin geolocalización** — el país es peor señal que el
+  selector manual guardado en cookie por un año. **Sin geolocalización** — el país es peor señal que el
   idioma configurado (alguien en EE.UU. puede preferir español).
-- Ojo al implementarlo: Next 16 renombró `middleware.ts` a `proxy.ts`; hay que verificar que la
-  biblioteca de i18n que se use ya lo soporte.
+- Implementación propia y pequeña en `src/i18n/`, sin rutas prefijadas ni dependencia externa.
+  El layout obtiene cookie/header con las APIs asíncronas de Next 16; las URLs existentes no cambian.
 
 ## Stack técnico (decidido)
 - Next.js 16 (App Router) + TypeScript + Tailwind v4 (config CSS-first, sin `.ts`)
@@ -80,11 +78,10 @@ web hecha por el servidor.
 - 7.4 Perfil + onboarding de 3 pasos saltable — **hecho** (`004`, corrida)
 - 7.5 Bucket `photos` privado + URLs firmadas — **hecho** (`004`, `uploadImage.ts`, `useSignedUrl.ts`).
   `products.image_url` pasó a `image_path`: guarda un path de Storage, no una URL.
-- 7.6 Backfill de `user_id` — **reportado como ejecutado, sin verificación técnica** (`003`)
-
-**Pendiente de la fase:** apagar el registro público en Supabase
-(Authentication → Providers → Email → *Enable sign ups* en off). Con RLS una cuenta ajena entra
-a un espacio vacío y no ve nada tuyo, pero consume cuota de correos y deja gente dando vueltas.
+- 7.6 Backfill de `user_id` — **hecho y verificado** (`003`). Las seis tablas dependientes
+  reportan `user_id` como `NOT NULL`.
+- 7.7 Registro público desactivado — **hecho** (Authentication → Providers → Email →
+  *Enable sign ups* en off).
 
 ## ✅ Fase 8 — Deploy en Vercel
 - 8.1 Repo conectado — **hecho**
@@ -212,7 +209,7 @@ Tres estados distintos, que conviene no confundir:
 |---|---|---|
 | `001_init.sql` | Tablas base | ✅ aplicada |
 | `002_auth_rls.sql` | RLS con `auth.uid() = user_id` en las 6 tablas | ✅ aplicada |
-| `003_backfill_user_id.sql` | Asigna filas huérfanas y aplica `NOT NULL` | ⚠️ sin verificar |
+| `003_backfill_user_id.sql` | Asigna filas huérfanas y aplica `NOT NULL` | ✅ aplicada |
 | `004_profile_storage.sql` | Campos de perfil, bucket privado, `image_url`→`image_path` | ✅ aplicada |
 | `005_producto_compra_vencimiento.sql` | brand, purchase_url, size_ml, pao_months, expires_at, repurchase | ✅ aplicada |
 | `006_producto_linea.sql` | product_line | ✅ aplicada |
@@ -223,9 +220,8 @@ Tres estados distintos, que conviene no confundir:
   filas, así que se puede consultar el esquema sin ver datos. Todas las columnas de 004, 005 y
   006 responden 200. `image_url` ya no existe, lo que confirma el renombrado de 004.
 - RLS: anon lee 0 filas en las 6 tablas y un insert anónimo devuelve 401.
-- **`003` no es verificable así**: su efecto observable es el `NOT NULL` sobre `user_id`, que
-  se leería del esquema OpenAPI de PostgREST, y ese endpoint exige autenticación (401 con la
-  anon key). Queda como reportada por el usuario, no confirmada.
+- **`003`**: verificada manualmente en el SQL Editor. `user_id` reporta `is_nullable = NO` en
+  `products`, `foods`, `exercises`, `checklist_entries`, `photos` y `log_entries`.
 - **`007`**: sus tres columnas responden 200 y el usuario confirmó haber corrido el archivo.
   Los **constraints no son verificables desde fuera** (no hay forma de leer `pg_constraint` con
   la anon key, y RLS impide provocar una violación a propósito), así que esa parte queda
@@ -236,11 +232,7 @@ Tres estados distintos, que conviene no confundir:
 **Dónde estamos ahora:** desplegado en Vercel, con auth y RLS cerrados y verificados. El esquema
 está al día: `product_line` completo de punta a punta y la app guardando productos.
 
-Pendiente inmediato:
-1. Apagar el registro público (Authentication → Providers → Email → *Enable sign ups* en off)
-2. Confirmar si `003` se aplicó (revisar en el SQL Editor si `products.user_id` es `NOT NULL`)
-
-Después, decidir rumbo: el i18n con la corrección al español neutro, la pantalla splash para
+Pendiente inmediato: validar y publicar el i18n. Después, decidir entre la pantalla splash para
 cerrar Fase 6 o Fase 10 (IA).
 
 **Cómo avanzar:** ve paso por paso. Si te trabas, pega el error o di en qué parte estás.

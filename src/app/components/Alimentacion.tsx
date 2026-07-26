@@ -11,6 +11,7 @@ import { Skeleton, CargandoTexto } from './ui/Skeleton';
 import { Input, Select, Textarea } from './ui/Field';
 import { Autocomplete } from './ui/Autocomplete';
 import { valoresUsados } from '@/lib/sugerencias';
+import { useI18n } from '@/i18n/I18nProvider';
 
 const CATEGORIES = [
   'Estructura',
@@ -32,6 +33,7 @@ type Food = {
 const EMPTY = { name: '', category: CATEGORIES[0], frequency: '', notes: '' };
 
 export default function Alimentacion() {
+  const { t, label } = useI18n();
   const { user } = useAuth();
   const [foods, setFoods] = useState<Food[]>([]);
   const [loading, setLoading] = useState(true);
@@ -103,7 +105,7 @@ export default function Alimentacion() {
     return (
       <>
         <Skeleton filas={3} />
-        <CargandoTexto />
+        <CargandoTexto>{t('common.loading')}</CargandoTexto>
       </>
     );
 
@@ -113,11 +115,11 @@ export default function Alimentacion() {
         action={
           <Button onClick={() => (open ? cerrar() : nuevo())}>
             <Plus size={13} strokeWidth={2.25} aria-hidden />
-            Agregar
+            {t('common.add')}
           </Button>
         }
       >
-        Alimentación
+        {t('food.title')}
       </SectionTitle>
 
       <Collapse open={open}>
@@ -129,43 +131,45 @@ export default function Alimentacion() {
             <Input
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder="Alimento o hábito"
-              aria-label="Alimento o hábito"
+              placeholder={t('food.name')}
+              aria-label={t('food.name')}
             />
             <Select
               value={form.category}
               onChange={(e) => setForm({ ...form, category: e.target.value })}
-              aria-label="Categoría"
+              aria-label={t('food.category')}
             >
               {CATEGORIES.map((c) => (
-                <option key={c}>{c}</option>
+                <option key={c} value={c}>{label(c)}</option>
               ))}
             </Select>
             <Autocomplete
               value={form.frequency}
               onChange={(v) => setForm({ ...form, frequency: v })}
               options={valoresUsados(foods, (f) => f.frequency)}
-              placeholder="Frecuencia"
-              aria-label="Frecuencia"
+              placeholder={t('common.frequency')}
+              aria-label={t('common.frequency')}
             />
             <Textarea
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
-              placeholder="Notas"
-              aria-label="Notas"
+              placeholder={t('food.notesExample')}
+              aria-label={t('common.notes')}
             />
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={cerrar}>
-              Cancelar
+              {t('common.cancel')}
             </Button>
-            <Button type="submit">{editing ? 'Guardar cambios' : 'Guardar'}</Button>
+            <Button type="submit">
+              {editing ? t('common.saveChanges') : t('common.save')}
+            </Button>
           </div>
         </form>
       </Collapse>
 
       {foods.length === 0 ? (
-        <EmptyState>Nada agregado todavía.</EmptyState>
+        <EmptyState>{t('food.empty')}</EmptyState>
       ) : (
         <div className="anim-lista">
           {foods.map((f) => (
@@ -173,17 +177,17 @@ export default function Alimentacion() {
               key={f.id}
               actions={
                 <>
-                  <IconButton label={`Editar ${f.name}`} onClick={() => editar(f)}>
+                  <IconButton label={t('actions.editNamed', { name: f.name })} onClick={() => editar(f)}>
                     <Pencil size={13} strokeWidth={2} aria-hidden />
                   </IconButton>
-                  <IconButton label={`Eliminar ${f.name}`} onClick={() => deleteFood(f.id)}>
+                  <IconButton label={t('actions.deleteNamed', { name: f.name })} onClick={() => deleteFood(f.id)}>
                     <X size={13} strokeWidth={2} aria-hidden />
                   </IconButton>
                 </>
               }
             >
               <CardName>{f.name}</CardName>
-              <CardMeta>{[f.category, f.frequency].filter(Boolean).join(' · ')}</CardMeta>
+              <CardMeta>{[label(f.category), f.frequency].filter(Boolean).join(' · ')}</CardMeta>
               {f.notes && <CardNotes>{f.notes}</CardNotes>}
             </Card>
           ))}

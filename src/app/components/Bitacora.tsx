@@ -8,6 +8,7 @@ import { Button, IconButton } from './ui/Button';
 import { Collapse } from './ui/Collapse';
 import { Skeleton, CargandoTexto } from './ui/Skeleton';
 import { Input, Textarea } from './ui/Field';
+import { useI18n } from '@/i18n/I18nProvider';
 
 type LogEntry = {
   id: string;
@@ -18,6 +19,7 @@ type LogEntry = {
 const today = () => new Date().toISOString().slice(0, 10);
 
 export default function Bitacora() {
+  const { t } = useI18n();
   const { user } = useAuth();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,7 +86,7 @@ export default function Bitacora() {
     return (
       <>
         <Skeleton filas={3} />
-        <CargandoTexto />
+        <CargandoTexto>{t('common.loading')}</CargandoTexto>
       </>
     );
 
@@ -94,11 +96,11 @@ export default function Bitacora() {
         action={
           <Button onClick={() => (open ? cerrar() : nueva())}>
             <Plus size={13} strokeWidth={2.25} aria-hidden />
-            Nueva entrada
+            {t('log.new')}
           </Button>
         }
       >
-        Bitácora / seguimiento
+        {t('log.title')}
       </SectionTitle>
 
       <Collapse open={open}>
@@ -111,28 +113,30 @@ export default function Bitacora() {
               type="date"
               value={form.entry_date}
               onChange={(e) => setForm({ ...form, entry_date: e.target.value })}
-              aria-label="Fecha"
+              aria-label={t('log.date')}
               className="sm:max-w-44"
             />
             <Textarea
               value={form.text}
               onChange={(e) => setForm({ ...form, text: e.target.value })}
-              placeholder="Qué notaste, qué cambiaste, cómo reaccionó la piel..."
-              aria-label="Entrada"
+              placeholder={t('log.example')}
+              aria-label={t('log.entry')}
               rows={3}
             />
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={cerrar}>
-              Cancelar
+              {t('common.cancel')}
             </Button>
-            <Button type="submit">{editing ? 'Guardar cambios' : 'Guardar'}</Button>
+            <Button type="submit">
+              {editing ? t('common.saveChanges') : t('common.save')}
+            </Button>
           </div>
         </form>
       </Collapse>
 
       {logs.length === 0 ? (
-        <EmptyState>Sin entradas todavía.</EmptyState>
+        <EmptyState>{t('log.empty')}</EmptyState>
       ) : (
         <div className="anim-lista">
           {logs.map((l) => (
@@ -142,10 +146,10 @@ export default function Bitacora() {
                   {l.entry_date}
                 </span>
                 <div className="flex shrink-0 gap-1.5">
-                  <IconButton label="Editar entrada" onClick={() => editar(l)}>
+                  <IconButton label={t('actions.editEntry')} onClick={() => editar(l)}>
                     <Pencil size={13} strokeWidth={2} aria-hidden />
                   </IconButton>
-                  <IconButton label="Eliminar entrada" onClick={() => deleteLog(l.id)}>
+                  <IconButton label={t('actions.deleteEntry')} onClick={() => deleteLog(l.id)}>
                     <X size={13} strokeWidth={2} aria-hidden />
                   </IconButton>
                 </div>

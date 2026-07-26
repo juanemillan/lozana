@@ -13,7 +13,7 @@ import { Collapse } from './ui/Collapse';
 import { Skeleton, CargandoTexto } from './ui/Skeleton';
 import { Input, Label, Select, Textarea } from './ui/Field';
 import { Autocomplete } from './ui/Autocomplete';
-import { valoresUsados } from '@/lib/sugerencias';
+import { valoresUsados, normalizar } from '@/lib/sugerencias';
 import { Thumb } from './ui/Avatar';
 
 const CATEGORIES = [
@@ -33,6 +33,7 @@ type Product = {
   id: string;
   name: string;
   brand: string | null;
+  product_line: string | null;
   category: string;
   description: string | null;
   price: number | null;
@@ -54,6 +55,7 @@ type Draft = Omit<Product, 'id' | 'image_path'>;
 const EMPTY: Draft = {
   name: '',
   brand: '',
+  product_line: '',
   category: CATEGORIES[0],
   description: '',
   price: null,
@@ -123,6 +125,7 @@ export default function Productos() {
     setForm({
       name: p.name,
       brand: p.brand ?? '',
+      product_line: p.product_line ?? '',
       category: p.category,
       description: p.description ?? '',
       price: p.price,
@@ -155,6 +158,7 @@ export default function Productos() {
     const payload = {
       ...form,
       brand: form.brand?.trim() || null,
+      product_line: form.product_line?.trim() || null,
       description: form.description?.trim() || null,
       purchase_url: form.purchase_url?.trim() || null,
       notes: form.notes?.trim() || null,
@@ -187,6 +191,15 @@ export default function Productos() {
   // ciertas por construcción: no hay nada generado ni traído de fuera.
   const marcasUsadas = valoresUsados(products, (p) => p.brand);
   const frecuenciasUsadas = valoresUsados(products, (p) => p.frequency);
+
+  // Las líneas se acotan a la marca que se está escribiendo: proponer una línea
+  // de Purito mientras cargas un CeraVe sería ruido. Sin marca aún, se ofrecen
+  // todas.
+  const marcaActual = normalizar(form.brand ?? '');
+  const lineasUsadas = valoresUsados(
+    marcaActual ? products.filter((p) => normalizar(p.brand ?? '') === marcaActual) : products,
+    (p) => p.product_line,
+  );
 
   useEffect(() => {
     (async () => {
@@ -234,6 +247,14 @@ export default function Productos() {
               options={marcasUsadas}
               placeholder="Marca"
               aria-label="Marca"
+            />
+            <Autocomplete
+              value={form.product_line ?? ''}
+              onChange={(v) => set('product_line', v)}
+              options={lineasUsadas}
+              placeholder="Línea (opcional)"
+              aria-label="Línea"
+              className="sm:col-span-2"
             />
             <Select
               value={form.category}
@@ -391,7 +412,7 @@ export default function Productos() {
               }
             >
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <CardName>{p.brand ? `${p.brand} · ${p.name}` : p.name}</CardName>
+                <CardName>{[p.brand, p.product_line, p.name].filter(Boolean).join(' · ')}</CardName>
                 <TimePill time={p.time_of_day} />
                 <StatusPill status={p.status} />
                 <VencimientoPill producto={p} />

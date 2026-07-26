@@ -235,6 +235,163 @@
   }
 }
 
+/* Splash de apertura. El dibujo ocurre con trazos SVG, sin video ni
+   JavaScript por fotograma: carga de inmediato y conserva bordes perfectos
+   en cualquier densidad de pantalla. */
+.lz-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 44%, rgb(251 249 243 / 0.92) 0 9rem, transparent 21rem),
+    var(--color-paper);
+  opacity: 1;
+  transition: opacity 320ms var(--ease-suave);
+}
+
+.lz-splash::before {
+  position: absolute;
+  width: min(78vw, 31rem);
+  aspect-ratio: 1;
+  border: 1px solid rgb(79 107 85 / 0.08);
+  border-radius: 50%;
+  content: '';
+  transform: scale(0.82);
+  animation: lz-splash-halo 1.15s var(--ease-suave) both;
+}
+
+.lz-splash--sale {
+  pointer-events: none;
+  opacity: 0;
+}
+
+.lz-splash__contenido {
+  position: relative;
+  display: flex;
+  min-width: 13rem;
+  flex-direction: column;
+  align-items: center;
+}
+
+.lz-splash__simbolo {
+  width: 5.5rem;
+  height: 5.5rem;
+  filter: drop-shadow(0 8px 16px rgb(42 40 31 / 0.08));
+  transform-origin: center;
+  animation: lz-splash-simbolo 700ms var(--ease-suave) both;
+}
+
+.lz-splash__circulo {
+  fill: var(--color-paper);
+  stroke: var(--color-sage);
+  stroke-width: 4;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transform: rotate(-90deg);
+  transform-origin: center;
+  animation: lz-splash-trazo 720ms var(--ease-suave) 40ms forwards;
+}
+
+.lz-splash__arco {
+  fill: none;
+  stroke: var(--color-clay);
+  stroke-width: 11;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: lz-splash-trazo 620ms var(--ease-suave) 240ms forwards;
+}
+
+.lz-splash__marca {
+  margin-top: 0.8rem;
+  font-family: var(--font-fraunces);
+  font-size: 2.15rem;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  opacity: 0;
+  animation: lz-splash-marca 520ms var(--ease-suave) 430ms forwards;
+}
+
+.lz-splash__subtitulo {
+  margin-top: 0.55rem;
+  color: var(--color-ink-soft);
+  font-family: var(--font-plex-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.12em;
+  opacity: 0;
+  text-transform: uppercase;
+  animation: lz-aparecer 420ms ease-out 650ms forwards;
+}
+
+.lz-splash__linea {
+  width: 4.25rem;
+  height: 1px;
+  margin-top: 1.35rem;
+  overflow: hidden;
+  background: var(--color-line);
+  opacity: 0;
+  animation: lz-aparecer 250ms ease-out 720ms forwards;
+}
+
+.lz-splash__linea::after {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--color-sage);
+  content: '';
+  transform: translateX(-100%);
+  animation: lz-splash-linea 680ms var(--ease-suave) 740ms forwards;
+}
+
+@keyframes lz-splash-trazo {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes lz-splash-simbolo {
+  from {
+    opacity: 0.35;
+    transform: scale(0.88) rotate(-3deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+}
+
+@keyframes lz-splash-marca {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes lz-splash-halo {
+  from {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes lz-splash-linea {
+  to {
+    transform: translateX(0);
+  }
+}
+
 /* El armazón queda anclado: si la navegación y el encabezado se movieran, el
    usuario perdería el punto de referencia que le dice que cambió el contenido
    y no la página entera. */
@@ -279,6 +436,32 @@
      de que algo está cargando. Solo se ralentiza. */
   .anim-latido {
     animation: lz-latido 3s ease-in-out infinite !important;
+  }
+
+  .lz-splash::before,
+  .lz-splash__simbolo,
+  .lz-splash__circulo,
+  .lz-splash__arco,
+  .lz-splash__marca,
+  .lz-splash__subtitulo,
+  .lz-splash__linea,
+  .lz-splash__linea::after {
+    animation: none !important;
+  }
+
+  .lz-splash__circulo,
+  .lz-splash__arco {
+    stroke-dashoffset: 0;
+  }
+
+  .lz-splash__marca,
+  .lz-splash__subtitulo,
+  .lz-splash__linea {
+    opacity: 1;
+  }
+
+  .lz-splash__linea::after {
+    transform: translateX(0);
   }
 
   *,

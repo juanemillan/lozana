@@ -55,14 +55,15 @@ web hecha por el servidor.
 ## ✅ Fase 5 — Checklist diario (completa)
 `Checklist.tsx` en `/` (Hoy): marca AM/PM por producto activo, calcula racha de días seguidos.
 
-## 🔄 Fase 6 — Diseño final
+## ✅ Fase 6 — Diseño final
 - 6.0 Navegación responsive + rutas reales — **hecho**
 - 6.1 Base visual: tokens + componentes UI — **hecho**
 - 6.2 Base visual aplicada a las secciones — **hecho**
 - 6.3 Resumen con métricas — **hecho** (`Resumen.tsx`)
 - 6.4 Edición (✎) en las 4 secciones — **hecho**
 - 6.5 Dibujar el ícono SVG final (arco + círculo) a mano — **hecho**
-- 6.6 Pantalla de inicio/splash con movimiento sutil — **pendiente**
+- 6.6 Pantalla de inicio/splash con movimiento sutil — **hecho**. Apertura editorial con
+  dibujo progresivo del símbolo SVG, entrada del wordmark y salida coordinada con Auth.
 - 6.7 (nuevo) Transiciones y movimiento — **hecho**. Ver sección aparte abajo.
 - 6.8 Tarjetas de Productos compactas y expandibles — **hecho**. La vista inicial prioriza
   foto, marca/línea, nombre, horario y frecuencia; el resto y las acciones aparecen al expandir.
@@ -132,6 +133,14 @@ Tokens en `globals.css`, calibrables sin tocar reglas:
 - `--duracion-entrada: 380ms` / `--duracion-salida: 180ms` — la salida siempre más rápida
 - `--escalon-lista: 45ms` — separación entre tarjetas al entrar
 - `--retraso-esqueleto: 400ms` — cuánto espera el esqueleto antes de aparecer
+
+El splash tiene una duración mínima de 1.7 segundos —incluye unos 500ms con la composición
+completa en reposo— y una salida de 320ms. La app se prepara
+por detrás y el fundido comienza solo cuando Auth terminó, para no revelar una pantalla incompleta.
+En navegador aparece una vez por sesión (`sessionStorage`), no al recargar ni al navegar. En una
+PWA instalada no se muestra, porque Android/iOS/escritorio ya presentan el splash del manifest y
+encadenar ambos se percibe como una repetición. Con `prefers-reduced-motion`, aparece la composición
+final estática y se elimina todo el trazado.
 
 Decisiones que conviene no deshacer sin querer:
 - **Las transiciones de vista corren superpuestas, no encadenadas.** Encadenarlas deja un
@@ -232,7 +241,6 @@ Tres estados distintos, que conviene no confundir:
 **Dónde estamos ahora:** desplegado en Vercel, con auth y RLS cerrados y verificados. El esquema
 está al día: `product_line` completo de punta a punta y la app guardando productos.
 
-Pendiente inmediato: validar y publicar el i18n. Después, decidir entre la pantalla splash para
-cerrar Fase 6 o Fase 10 (IA).
+Pendiente inmediato: validar y publicar el splash. Después, comenzar Fase 10 (IA).
 
 **Cómo avanzar:** ve paso por paso. Si te trabas, pega el error o di en qué parte estás.

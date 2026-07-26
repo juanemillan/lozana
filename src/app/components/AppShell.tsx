@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, ViewTransition } from 'react';
+import { useEffect, useState, ViewTransition } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from './AuthProvider';
@@ -12,22 +12,77 @@ import { Avatar } from './ui/Avatar';
 import { initials } from '@/lib/profile';
 import { LanguageSelector } from './LanguageSelector';
 import { useI18n } from '@/i18n/I18nProvider';
+import { SplashScreen } from './SplashScreen';
+
+const SPLASH_SESSION_KEY = 'lozana:splash-shown';
+type SplashState = 'pending' | 'showing' | 'hidden';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, profile, loading } = useAuth();
   const pathname = usePathname();
   const [skipped, setSkipped] = useState(false);
+  const [minimumSplashDone, setMinimumSplashDone] = useState(false);
+  const [splashState, setSplashState] = useState<SplashState>('pending');
+  const [splashExiting, setSplashExiting] = useState(false);
   const { t } = useI18n();
+
+  useEffect(() => {
+    const navigatorWithStandalone = window.navigator as Navigator & { standalone?: boolean };
+    const installed =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      navigatorWithStandalone.standalone === true ||
+      document.referrer.startsWith('android-app://');
+    const shownThisSession = sessionStorage.getItem(SPLASH_SESSION_KEY) === '1';
+
+    if (installed || shownThisSession) {
+      const decisionTimer = window.setTimeout(() => setSplashState('hidden'), 0);
+      return () => window.clearTimeout(decisionTimer);
+    }
+
+    sessionStorage.setItem(SPLASH_SESSION_KEY, '1');
+    const showTimer = window.setTimeout(() => setSplashState('showing'), 0);
+    const minimumTimer = window.setTimeout(() => setMinimumSplashDone(true), 1700);
+    return () => {
+      window.clearTimeout(showTimer);
+      window.clearTimeout(minimumTimer);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (loading || !minimumSplashDone || splashState !== 'showing') return;
+
+    const exitTimer = window.setTimeout(() => setSplashExiting(true), 0);
+    const hideTimer = window.setTimeout(() => setSplashState('hidden'), 340);
+    return () => {
+      window.clearTimeout(exitTimer);
+      window.clearTimeout(hideTimer);
+    };
+  }, [loading, minimumSplashDone, splashState]);
+
+  const splash =
+    splashState === 'showing' ? <SplashScreen exiting={splashExiting} /> : null;
+
+  // Espera a decidir el contexto antes de pintar Auth. Evita revelar Login
+  // durante un fotograma y cubrirlo inmediatamente con el splash.
+  if (splashState === 'pending') return null;
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="font-mono text-xs text-ink-soft">{t('common.loading')}...</p>
-      </div>
+      splash ?? (
+        <div className="flex min-h-screen items-center justify-center">
+          <p className="font-mono text-xs text-ink-soft">{t('common.loading')}...</p>
+        </div>
+      )
     );
   }
 
-  if (!user) return <LoginForm />;
+  if (!user)
+    return (
+      <>
+        <LoginForm />
+        {splash}
+      </>
+    );
 
   // El onboarding aparece una vez. `skipped` cubre el "Después" dentro de esta
   // sesión; SKIP_KEY lo recuerda entre recargas. El recordatorio del Resumen
@@ -36,7 +91,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const posterga = skipped || (typeof window !== 'undefined' && localStorage.getItem(SKIP_KEY));
 
   if (pendiente && !posterga) {
-    return <Onboarding onDone={() => setSkipped(true)} />;
+    return (
+      <>
+        <Onboarding onDone={() => setSkipped(true)} />
+        {splash}
+      </>
+    );
   }
 
   return (
@@ -80,6 +140,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </ViewTransition>
         </div>
       </div>
+      {splash}
     </>
   );
 }

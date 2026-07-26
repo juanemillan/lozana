@@ -1,26 +1,53 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* Superficies */
+  --color-paper: #ece7da;
+  --color-surface: #fbf9f3;
+
+  /* Texto */
+  --color-ink: #2a281f;
+  --color-ink-soft: #6b674f;
+
+  /* Líneas */
+  --color-line: #d8d0bc;
+  --color-line-strong: #c2b89c;
+
+  /* Acentos. El par tint/deep está pensado para pills y badges:
+     el tono -deep es el único que pasa contraste AA sobre su -tint. */
+  --color-sage: #4f6b55;
+  --color-sage-deep: #374a3a;
+  --color-sage-tint: #dce5da;
+
+  --color-clay: #b08064;
+  --color-clay-deep: #7a4e36;
+  --color-clay-tint: #efdfd4;
+
+  --color-plum: #8b5a66;
+  --color-plum-deep: #5a3540;
+  --color-plum-tint: #f3dedb;
+
+  --color-sand: #ddd6c8;
+  --color-sand-deep: #4a4630;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-serif: var(--font-fraunces);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-plex-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
   }
-}
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-serif);
+    font-weight: 500;
+  }
 }

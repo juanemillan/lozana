@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Bitácora de piel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#ECE7DA; --surface:#FBF9F3; --ink:#2A281F; --ink-soft:#6B674F;
+  --sage:#4F6B55; --sage-dark:#374A3A; --sage-tint:#DCE5DA;
+  --clay:#B08064; --clay-tint:#EFDFD4;
+  --rose:#9C5450; --rose-tint:#F3DEDB;
+  --line:#D8D0BC; --line-strong:#C2B89C;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;}
+.wrap{max-width:920px;margin:0 auto;padding:28px 20px 60px;}
+h1,h2,h3{font-family:'Fraunces',serif;font-weight:500;margin:0;}
+.header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:22px;border-bottom:2px solid var(--ink);padding-bottom:14px;}
+.header h1{font-size:26px;letter-spacing:0.2px;}
+.header .stamp{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);border:1px solid var(--line-strong);border-radius:3px;padding:3px 8px;}
+.tabs{display:flex;gap:6px;margin-bottom:22px;flex-wrap:wrap;}
+.tab{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.3px;padding:8px 14px;border:1px solid var(--line-strong);border-radius:20px;background:var(--surface);cursor:pointer;color:var(--ink-soft);}
+.tab.active{background:var(--ink);color:var(--surface);border-color:var(--ink);}
+.panel{display:none;}
+.panel.active{display:block;}
+.grid-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px;}
+.metric{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;}
+.metric .num{font-family:'Fraunces',serif;font-size:28px;color:var(--sage-dark);}
+.metric .lbl{font-size:12px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.5px;}
+.section-title{display:flex;align-items:center;justify-content:space-between;margin:26px 0 10px;}
+.section-title h2{font-size:17px;}
+.pill{font-family:'IBM Plex Mono',monospace;font-size:10px;padding:2px 8px;border-radius:10px;letter-spacing:0.3px;}
+.pill-am{background:var(--sage-tint);color:var(--sage-dark);}
+.pill-pm{background:#DDD6C8;color:#4A4630;}
+.pill-week{background:var(--clay-tint);color:#7A4E36;}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;gap:10px;align-items:flex-start;}
+.card .info{flex:1;}
+.card .name{font-weight:500;font-size:14px;}
+.card .meta{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+.card .notes{font-size:12px;color:var(--ink-soft);margin-top:4px;font-style:italic;}
+.card-actions{display:flex;gap:6px;flex-shrink:0;}
+.icon-btn{border:1px solid var(--line-strong);background:var(--surface);border-radius:6px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink-soft);font-size:13px;}
+.icon-btn:hover{background:var(--sage-tint);color:var(--sage-dark);}
+.add-btn{font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--sage);color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;}
+.add-btn:hover{background:var(--sage-dark);}
+.form-box{background:var(--surface);border:1px dashed var(--line-strong);border-radius:10px;padding:14px;margin-bottom:12px;display:none;}
+.form-box.open{display:block;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+.form-box input,.form-box select,.form-box textarea{width:100%;font-family:'Inter',sans-serif;font-size:13px;padding:7px 9px;border:1px solid var(--line-strong);border-radius:6px;background:#fff;color:var(--ink);}
+.form-box textarea{grid-column:1/3;resize:vertical;min-height:40px;}
+.form-actions{display:flex;gap:8px;justify-content:flex-end;}
+.btn-save{background:var(--sage);color:#fff;border:none;padding:7px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;}
+.btn-cancel{background:transparent;border:1px solid var(--line-strong);padding:7px 14px;border-radius:6px;font-size:12px;cursor:pointer;color:var(--ink-soft);}
+.empty{font-size:13px;color:var(--ink-soft);font-style:italic;padding:10px 0;}
+.log-entry{border-left:2px solid var(--sage);padding:4px 0 4px 12px;margin-bottom:10px;}
+.log-date{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--sage-dark);}
+.log-text{font-size:13px;margin-top:2px;}
+.status-Activo{color:var(--sage-dark);}
+.status-Pendiente{color:var(--clay);}
+.status-Pausado{color:var(--rose);}
+.loading{font-size:13px;color:var(--ink-soft);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <h1>Bitácora de piel</h1>
+    <div class="stamp" id="today-stamp">—</div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="resumen">Resumen</div>
+    <div class="tab" data-tab="productos">Productos</div>
+    <div class="tab" data-tab="alimentacion">Alimentación</div>
+    <div class="tab" data-tab="ejercicio">Ejercicio</div>
+    <div class="tab" data-tab="bitacora">Bitácora</div>
+  </div>
+
+  <div id="status" class="loading">Cargando...</div>
+
+  <div class="panel active" id="panel-resumen"></div>
+  <div class="panel" id="panel-productos"></div>
+  <div class="panel" id="panel-alimentacion"></div>
+  <div class="panel" id="panel-ejercicio"></div>
+  <div class="panel" id="panel-bitacora"></div>
+</div>
+
+<script>
+const STORAGE_KEY = 'skin-dashboard-data-v1';
+let data = null;
+
+const seed = {
+  products: [
+    {id:'p1',name:'Retinal 4% Seoul 1988 (rostro)',category:'Tratamiento',time:'PM',freq:'2-3x/semana',status:'Activo',notes:'Subir gradual, ir viendo tolerancia'},
+    {id:'p2',name:'Contorno de ojos Retinal Liposome 4% Seoul 1988',category:'Ojos',time:'PM',freq:'2x/semana',status:'Activo',notes:'Capa mínima, lejos del párpado'},
+    {id:'p3',name:'Purito Wonder Releaf Centella Tónico',category:'Tónico',time:'AM/PM',freq:'Diario',status:'Activo',notes:'Alternar con tónico SNP'},
+    {id:'p4',name:'Purito Wonder Releaf Centella Sérum',category:'Sérum',time:'PM',freq:'Noches sin retinal',status:'Activo',notes:'Calmante, para noches de descanso'},
+    {id:'p5',name:'Purito Wonder Releaf Centella Crema',category:'Hidratante',time:'PM',freq:'Diario',status:'Activo',notes:'Ideal después del retinal'},
+    {id:'p6',name:'Beauty of Joseon Relief Sun SPF50+',category:'Protector Solar',time:'AM',freq:'Diario',status:'Activo',notes:'No negociable'},
+    {id:'p7',name:'The Ordinary Ácido Hialurónico',category:'Sérum',time:'AM/PM',freq:'Diario',status:'Activo',notes:'Sobre piel húmeda'},
+    {id:'p8',name:'CeraVe Limpiadora Hidratante',category:'Limpiador',time:'AM/PM',freq:'Diario',status:'Activo',notes:''},
+    {id:'p9',name:'SNP Tónico',category:'Tónico',time:'AM/PM',freq:'Diario',status:'Activo',notes:''},
+    {id:'p10',name:'SNP Sérum Péptidos',category:'Sérum',time:'AM/PM',freq:'Diario',status:'Activo',notes:'Firmeza'},
+    {id:'p11',name:'SNP Eye Cream',category:'Ojos',time:'AM/PM',freq:'Diario',status:'Activo',notes:''},
+    {id:'p12',name:'SNP Crema Hidratante',category:'Hidratante',time:'AM/PM',freq:'Diario',status:'Activo',notes:''},
+    {id:'p13',name:'Piedra Gua Sha (jade)',category:'Herramienta',time:'PM',freq:'Semanal',status:'Activo',notes:'Circulación y drenaje'},
+    {id:'p14',name:'Vitamina C (por definir marca)',category:'Sérum',time:'AM',freq:'Diario',status:'Pendiente',notes:'Candidatos: Naturium, COSRX, Timeless'}
+  ],
+  foods: [
+    {id:'f1',name:'Proteína (carnes, pescado, huevo, legumbres)',category:'Estructura',freq:'Diario',notes:''},
+    {id:'f2',name:'Colágeno hidrolizado',category:'Suplemento',freq:'Diario (10g)',notes:''},
+    {id:'f3',name:'Creatina PURE',category:'Suplemento',freq:'Diario',notes:'Ya en uso'},
+    {id:'f4',name:'Grasas saludables (palta, oliva, frutos secos, pescado graso)',category:'Volumen/barrera',freq:'Diario',notes:''},
+    {id:'f5',name:'Antioxidantes (frutos rojos, hoja verde, cítricos)',category:'Protección',freq:'Diario',notes:''},
+    {id:'f6',name:'Agua',category:'Hidratación',freq:'2-2.5L/día',notes:''},
+    {id:'f7',name:'Reducir azúcar y ultraprocesados',category:'Restricción',freq:'Constante',notes:'Glicación endurece colágeno'},
+    {id:'f8',name:'Reducir alcohol',category:'Restricción',freq:'Constante',notes:''}
+  ],
+  exercises: [
+    {id:'e1',name:'Cardio moderado',freq:'3-4x/semana',notes:'Circulación y oxigenación'},
+    {id:'e2',name:'Ejercicios faciales',freq:'Ocasional',notes:'Ya los haces a veces'},
+    {id:'e3',name:'Gua sha / masaje facial',freq:'Semanal',notes:'Con la piedra de jade'},
+    {id:'e4',name:'Sueño 7-8h',freq:'Diario',notes:'Boca arriba si es posible'}
+  ],
+  logs: [
+    {id:'l1',date: new Date().toISOString().slice(0,10), text:'Compré rutina completa: Purito Centella kit, Seoul 1988 eye cream, Beauty of Joseon SPF, The Ordinary HA, CeraVe. Retinal 4% probado 2 veces sin irritación.'}
+  ]
+};
+
+function uid(){return 'id'+Date.now()+Math.floor(Math.random()*1000);}
+
+async function loadData(){
+  try{
+    const res = await window.storage.get(STORAGE_KEY, false);
+    data = JSON.parse(res.value);
+  }catch(e){
+    data = seed;
+    await saveData();
+  }
+  document.getElementById('status').style.display='none';
+  document.getElementById('today-stamp').textContent = new Date().toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});
+  renderAll();
+}
+
+async function saveData(){
+  try{
+    await window.storage.set(STORAGE_KEY, JSON.stringify(data), false);
+  }catch(e){
+    console.error('Error guardando', e);
+  }
+}
+
+function renderAll(){
+  renderResumen();
+  renderProductos();
+  renderAlimentacion();
+  renderEjercicio();
+  renderBitacora();
+}
+
+function timePill(time){
+  if(time==='AM') return '<span class="pill pill-am">AM</span>';
+  if(time==='PM') return '<span class="pill pill-pm">PM</span>';
+  return '<span class="pill pill-am">AM</span> <span class="pill pill-pm">PM</span>';
+}
+
+function renderResumen(){
+  const el = document.getElementById('panel-resumen');
+  const activos = data.products.filter(p=>p.status==='Activo').length;
+  const pendientes = data.products.filter(p=>p.status==='Pendiente').length;
+  const am = data.products.filter(p=>p.status==='Activo' && (p.time==='AM'||p.time==='AM/PM'));
+  const pm = data.products.filter(p=>p.status==='Activo' && (p.time==='PM'||p.time==='AM/PM'));
+  el.innerHTML = `
+    <div class="grid-summary">
+      <div class="metric"><div class="num">${activos}</div><div class="lbl">Productos activos</div></div>
+      <div class="metric"><div class="num">${pendientes}</div><div class="lbl">Pendientes</div></div>
+      <div class="metric"><div class="num">${data.foods.length}</div><div class="lbl">Ítems alimentación</div></div>
+      <div class="metric"><div class="num">${data.exercises.length}</div><div class="lbl">Hábitos de ejercicio</div></div>
+    </div>
+    <div class="section-title"><h2>Rutina AM</h2></div>
+    ${am.map(p=>`<div class="card"><div class="info"><span class="name">${p.name}</span> ${timePill(p.time)}<div class="meta">${p.category} · ${p.freq}</div></div></div>`).join('') || '<div class="empty">Sin productos AM activos.</div>'}
+    <div class="section-title"><h2>Rutina PM</h2></div>
+    ${pm.map(p=>`<div class="card"><div class="info"><span class="name">${p.name}</span> ${timePill(p.time)}<div class="meta">${p.category} · ${p.freq}</div></div></div>`).join('') || '<div class="empty">Sin productos PM activos.</div>'}
+  `;
+}
+
+function renderList(containerId, items, kind){
+  const el = document.getElementById(containerId);
+  if(items.length===0){
+    el.innerHTML = '<div class="empty">Nada agregado todavía.</div>';
+    return;
+  }
+  el.innerHTML = items.map(it=>{
+    let metaParts = [];
+    if(kind==='product'){
+      metaParts.push(it.category);
+      metaParts.push(it.freq);
+      metaParts.push(`<span class="status-${it.status}">${it.status}</span>`);
+    } else if(kind==='food'){
+      metaParts.push(it.category);
+      metaParts.push(it.freq);
+    } else {
+      metaParts.push(it.freq);
+    }
+    return `<div class="card">
+      <div class="info">
+        <span class="name">${it.name}</span> ${kind==='product'?timePill(it.time):''}
+        <div class="meta">${metaParts.join(' · ')}</div>
+        ${it.notes? `<div class="notes">${it.notes}</div>`:''}
+      </div>
+      <div class="card-actions">
+        <div class="icon-btn" onclick="editItem('${kind}','${it.id}')" title="Editar">✎</div>
+        <div class="icon-btn" onclick="deleteItem('${kind}','${it.id}')" title="Eliminar">✕</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderProductos(){
+  const el = document.getElementById('panel-productos');
+  if(!document.getElementById('form-product')){
+    el.innerHTML = `
+      <div class="section-title"><h2>Productos</h2><button class="add-btn" onclick="toggleForm('product')">+ Agregar</button></div>
+      <div class="form-box" id="form-product">
+        <input type="hidden" id="product-id">
+        <div class="form-row">
+          <input id="product-name" placeholder="Nombre del producto">
+          <select id="product-category">
+            <option>Limpiador</option><option>Tónico</option><option>Sérum</option>
+            <option>Tratamiento</option><option>Ojos</option><option>Hidratante</option>
+            <option>Protector Solar</option><option>Herramienta</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <select id="product-time"><option>AM</option><option>PM</option><option>AM/PM</option></select>
+          <input id="product-freq" placeholder="Frecuencia (ej: Diario, 2x/semana)">
+        </div>
+        <div class="form-row">
+          <select id="product-status"><option>Activo</option><option>Pendiente</option><option>Pausado</option></select>
+          <textarea id="product-notes" placeholder="Notas"></textarea>
+        </div>
+        <div class="form-actions">
+          <button class="btn-cancel" onclick="toggleForm('product')">Cancelar</button>
+          <button class="btn-save" onclick="saveItem('product')">Guardar</button>
+        </div>
+      </div>
+      <div id="list-productos"></div>
+    `;
+  }
+  renderList('list-productos', data.products, 'product');
+}
+
+function renderAlimentacion(){
+  const el = document.getElementById('panel-alimentacion');
+  if(!document.getElementById('form-food')){
+    el.innerHTML = `
+      <div class="section-title"><h2>Alimentación</h2><button class="add-btn" onclick="toggleForm('food')">+ Agregar</button></div>
+      <div class="form-box" id="form-food">
+        <input type="hidden" id="food-id">
+        <div class="form-row">
+          <input id="food-name" placeholder="Alimento o hábito">
+          <select id="food-category">
+            <option>Estructura</option><option>Suplemento</option><option>Volumen/barrera</option>
+            <option>Protección</option><option>Hidratación</option><option>Restricción</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <input id="food-freq" placeholder="Frecuencia">
+          <textarea id="food-notes" placeholder="Notas"></textarea>
+        </div>
+        <div class="form-actions">
+          <button class="btn-cancel" onclick="toggleForm('food')">Cancelar</button>
+          <button class="btn-save" onclick="saveItem('food')">Guardar</button>
+        </div>
+      </div>
+      <div id="list-alimentacion"></div>
+    `;
+  }
+  renderList('list-alimentacion', data.foods, 'food');
+}
+
+function renderEjercicio(){
+  const el = document.getElementById('panel-ejercicio');
+  if(!document.getElementById('form-exercise')){
+    el.innerHTML = `
+      <div class="section-title"><h2>Ejercicio y hábitos</h2><button class="add-btn" onclick="toggleForm('exercise')">+ Agregar</button></div>
+      <div class="form-box" id="form-exercise">
+        <input type="hidden" id="exercise-id">
+        <div class="form-row">
+          <input id="exercise-name" placeholder="Actividad">
+          <input id="exercise-freq" placeholder="Frecuencia">
+        </div>
+        <div class="form-row">
+          <textarea id="exercise-notes" placeholder="Notas" style="grid-column:1/3;"></textarea>
+        </div>
+        <div class="form-actions">
+          <button class="btn-cancel" onclick="toggleForm('exercise')">Cancelar</button>
+          <button class="btn-save" onclick="saveItem('exercise')">Guardar</button>
+        </div>
+      </div>
+      <div id="list-ejercicio"></div>
+    `;
+  }
+  renderList('list-ejercicio', data.exercises, 'exercise');
+}
+
+function renderBitacora(){
+  const el = document.getElementById('panel-bitacora');
+  if(!document.getElementById('form-log')){
+    el.innerHTML = `
+      <div class="section-title"><h2>Bitácora / seguimiento</h2><button class="add-btn" onclick="toggleForm('log')">+ Nueva entrada</button></div>
+      <div class="form-box" id="form-log">
+        <input type="hidden" id="log-id">
+        <div class="form-row">
+          <input type="date" id="log-date">
+          <div></div>
+        </div>
+        <div class="form-row">
+          <textarea id="log-text" placeholder="Qué notaste, qué cambiaste, cómo reaccionó la piel..." style="grid-column:1/3;"></textarea>
+        </div>
+        <div class="form-actions">
+          <button class="btn-cancel" onclick="toggleForm('log')">Cancelar</button>
+          <button class="btn-save" onclick="saveItem('log')">Guardar</button>
+        </div>
+      </div>
+      <div id="list-bitacora"></div>
+    `;
+  }
+  const sorted = [...data.logs].sort((a,b)=>b.date.localeCompare(a.date));
+  const listEl = document.getElementById('list-bitacora');
+  if(sorted.length===0){
+    listEl.innerHTML = '<div class="empty">Sin entradas todavía.</div>';
+  } else {
+    listEl.innerHTML = sorted.map(l=>`
+      <div class="log-entry">
+        <div class="log-date">${l.date}</div>
+        <div class="log-text">${l.text}</div>
+        <div class="card-actions" style="margin-top:4px;">
+          <div class="icon-btn" onclick="editItem('log','${l.id}')" title="Editar">✎</div>
+          <div class="icon-btn" onclick="deleteItem('log','${l.id}')" title="Eliminar">✕</div>
+        </div>
+      </div>
+    `).join('');
+  }
+}
+
+function collectionFor(kind){
+  return {product:'products',food:'foods',exercise:'exercises',log:'logs'}[kind];
+}
+
+function toggleForm(kind){
+  const form = document.getElementById('form-'+kind);
+  form.classList.toggle('open');
+  if(form.classList.contains('open')){
+    document.getElementById(kind+'-id').value='';
+    if(kind==='product'){
+      document.getElementById('product-name').value='';
+      document.getElementById('product-freq').value='';
+      document.getElementById('product-notes').value='';
+    } else if(kind==='food'){
+      document.getElementById('food-name').value='';
+      document.getElementById('food-freq').value='';
+      document.getElementById('food-notes').value='';
+    } else if(kind==='exercise'){
+      document.getElementById('exercise-name').value='';
+      document.getElementById('exercise-freq').value='';
+      document.getElementById('exercise-notes').value='';
+    } else if(kind==='log'){
+      document.getElementById('log-date').value=new Date().toISOString().slice(0,10);
+      document.getElementById('log-text').value='';
+    }
+  }
+}
+
+function editItem(kind, id){
+  const list = data[collectionFor(kind)];
+  const item = list.find(i=>i.id===id);
+  if(!item) return;
+  const form = document.getElementById('form-'+kind);
+  form.classList.add('open');
+  document.getElementById(kind+'-id').value = item.id;
+  if(kind==='product'){
+    document.getElementById('product-name').value=item.name;
+    document.getElementById('product-category').value=item.category;
+    document.getElementById('product-time').value=item.time;
+    document.getElementById('product-freq').value=item.freq;
+    document.getElementById('product-status').value=item.status;
+    document.getElementById('product-notes').value=item.notes;
+  } else if(kind==='food'){
+    document.getElementById('food-name').value=item.name;
+    document.getElementById('food-category').value=item.category;
+    document.getElementById('food-freq').value=item.freq;
+    document.getElementById('food-notes').value=item.notes;
+  } else if(kind==='exercise'){
+    document.getElementById('exercise-name').value=item.name;
+    document.getElementById('exercise-freq').value=item.freq;
+    document.getElementById('exercise-notes').value=item.notes;
+  } else if(kind==='log'){
+    document.getElementById('log-date').value=item.date;
+    document.getElementById('log-text').value=item.text;
+  }
+  form.scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+async function saveItem(kind){
+  const id = document.getElementById(kind+'-id').value || uid();
+  let item;
+  if(kind==='product'){
+    item = {
+      id, name: document.getElementById('product-name').value.trim(),
+      category: document.getElementById('product-category').value,
+      time: document.getElementById('product-time').value,
+      freq: document.getElementById('product-freq').value.trim(),
+      status: document.getElementById('product-status').value,
+      notes: document.getElementById('product-notes').value.trim()
+    };
+    if(!item.name) return;
+  } else if(kind==='food'){
+    item = {
+      id, name: document.getElementById('food-name').value.trim(),
+      category: document.getElementById('food-category').value,
+      freq: document.getElementById('food-freq').value.trim(),
+      notes: document.getElementById('food-notes').value.trim()
+    };
+    if(!item.name) return;
+  } else if(kind==='exercise'){
+    item = {
+      id, name: document.getElementById('exercise-name').value.trim(),
+      freq: document.getElementById('exercise-freq').value.trim(),
+      notes: document.getElementById('exercise-notes').value.trim()
+    };
+    if(!item.name) return;
+  } else if(kind==='log'){
+    item = {
+      id, date: document.getElementById('log-date').value,
+      text: document.getElementById('log-text').value.trim()
+    };
+    if(!item.text) return;
+  }
+  const coll = collectionFor(kind);
+  const idx = data[coll].findIndex(i=>i.id===id);
+  if(idx>=0) data[coll][idx] = item; else data[coll].push(item);
+  await saveData();
+  toggleForm(kind);
+  renderAll();
+}
+
+async function deleteItem(kind, id){
+  const coll = collectionFor(kind);
+  data[coll] = data[coll].filter(i=>i.id!==id);
+  await saveData();
+  renderAll();
+}
+
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('panel-'+tab.dataset.tab).classList.add('active');
+  });
+});
+
+loadData();
+</script>
+</body>
+</html>

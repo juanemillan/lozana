@@ -1,16 +1,19 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { X, Plus, Pencil, ImagePlus } from 'lucide-react';
+import { X, Plus, Pencil, ImagePlus, ExternalLink } from 'lucide-react';
+import { calcularVencimiento, etiquetaVencimiento, precioPorUnidad } from '@/lib/vencimiento';
 import { supabase } from '@/lib/supabase';
 import { uploadImage } from '@/lib/uploadImage';
 import { useAuth } from './AuthProvider';
 import { Card, CardName, CardMeta, CardNotes } from './ui/Card';
 import { SectionTitle, EmptyState } from './ui/SectionTitle';
-import { TimePill, StatusPill } from './ui/Pill';
+import { Pill, TimePill, StatusPill } from './ui/Pill';
 import { Button, IconButton } from './ui/Button';
 import { Collapse } from './ui/Collapse';
 import { Skeleton, CargandoTexto } from './ui/Skeleton';
-import { Input, Select, Textarea } from './ui/Field';
+import { Input, Label, Select, Textarea } from './ui/Field';
+import { Autocomplete } from './ui/Autocomplete';
+import { valoresUsados } from '@/lib/sugerencias';
 import { Thumb } from './ui/Avatar';
 
 const CATEGORIES = [
@@ -29,9 +32,16 @@ const STATUSES = ['Activo', 'Pendiente', 'Pausado'];
 type Product = {
   id: string;
   name: string;
+  brand: string | null;
   category: string;
   description: string | null;
   price: number | null;
+  size_ml: number | null;
+  purchase_url: string | null;
+  opened_at: string | null;
+  pao_months: number | null;
+  expires_at: string | null;
+  repurchase: boolean | null;
   time_of_day: string;
   frequency: string;
   status: string;
@@ -43,14 +53,42 @@ type Draft = Omit<Product, 'id' | 'image_path'>;
 
 const EMPTY: Draft = {
   name: '',
+  brand: '',
   category: CATEGORIES[0],
   description: '',
   price: null,
+  size_ml: null,
+  purchase_url: '',
+  opened_at: null,
+  pao_months: null,
+  expires_at: null,
+  repurchase: null,
   time_of_day: TIMES[0],
   frequency: '',
   status: STATUSES[0],
   notes: '',
 };
+
+/** Solo aparece cuando hay algo que avisar; si está vigente no ocupa espacio. */
+function VencimientoPill({ producto }: { producto: Product }) {
+  const v = calcularVencimiento(producto);
+  const texto = etiquetaVencimiento(v);
+  if (!texto) return null;
+
+  return (
+    <Pill tone={v.estado === 'vencido' ? 'plum' : 'clay'}>
+      {texto}
+      {v.origen === 'pao' && ' · desde apertura'}
+    </Pill>
+  );
+}
+
+/** Convierte lo que escribe el usuario en número o null, sin dejar NaN. */
+function aNumero(v: string): number | null {
+  if (v.trim() === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
 
 export default function Productos() {
   const { user } = useAuth();
@@ -84,9 +122,16 @@ export default function Productos() {
     setEditing(p.id);
     setForm({
       name: p.name,
+      brand: p.brand ?? '',
       category: p.category,
       description: p.description ?? '',
       price: p.price,
+      size_ml: p.size_ml,
+      purchase_url: p.purchase_url ?? '',
+      opened_at: p.opened_at,
+      pao_months: p.pao_months,
+      expires_at: p.expires_at,
+      repurchase: p.repurchase,
       time_of_day: p.time_of_day,
       frequency: p.frequency ?? '',
       status: p.status,
@@ -105,9 +150,13 @@ export default function Productos() {
     e.preventDefault();
     if (!user || !form.name.trim()) return;
 
+    // Las cadenas vacías se guardan como null: en la base "sin dato" y "cadena
+    // vacía" son cosas distintas, y mezclarlas complica cualquier consulta.
     const payload = {
       ...form,
+      brand: form.brand?.trim() || null,
       description: form.description?.trim() || null,
+      purchase_url: form.purchase_url?.trim() || null,
       notes: form.notes?.trim() || null,
     };
 
@@ -133,6 +182,11 @@ export default function Productos() {
     if (error) console.error(error);
     else fetchProducts();
   }
+
+  // Las sugerencias salen de lo que el propio usuario ya cargó, así que son
+  // ciertas por construcción: no hay nada generado ni traído de fuera.
+  const marcasUsadas = valoresUsados(products, (p) => p.brand);
+  const frecuenciasUsadas = valoresUsados(products, (p) => p.frequency);
 
   useEffect(() => {
     (async () => {
@@ -173,7 +227,13 @@ export default function Productos() {
               onChange={(e) => set('name', e.target.value)}
               placeholder="Nombre del producto"
               aria-label="Nombre"
-              className="sm:col-span-2"
+            />
+            <Autocomplete
+              value={form.brand ?? ''}
+              onChange={(v) => set('brand', v)}
+              options={marcasUsadas}
+              placeholder="Marca"
+              aria-label="Marca"
             />
             <Select
               value={form.category}
@@ -193,9 +253,10 @@ export default function Productos() {
                 <option key={t}>{t}</option>
               ))}
             </Select>
-            <Input
+            <Autocomplete
               value={form.frequency}
-              onChange={(e) => set('frequency', e.target.value)}
+              onChange={(v) => set('frequency', v)}
+              options={frecuenciasUsadas}
               placeholder="Frecuencia (ej: Diario, 2x/semana)"
               aria-label="Frecuencia"
             />
@@ -209,19 +270,11 @@ export default function Productos() {
               ))}
             </Select>
             <Input
-              type="number"
-              step="0.01"
-              min="0"
-              value={form.price ?? ''}
-              onChange={(e) => set('price', e.target.value === '' ? null : Number(e.target.value))}
-              placeholder="Precio"
-              aria-label="Precio"
-            />
-            <Input
               value={form.description ?? ''}
               onChange={(e) => set('description', e.target.value)}
               placeholder="Descripción"
               aria-label="Descripción"
+              className="sm:col-span-2"
             />
             <Textarea
               value={form.notes ?? ''}
@@ -230,6 +283,85 @@ export default function Productos() {
               aria-label="Notas"
               className="sm:col-span-2"
             />
+          </div>
+
+          <p className="mt-4 mb-2 border-t border-line pt-3 font-mono text-[11px] uppercase tracking-wide text-ink-soft">
+            Compra y vencimiento
+          </p>
+
+          <div className="mb-2 grid gap-2 sm:grid-cols-2">
+            <Input
+              type="number"
+              step="0.01"
+              min="0"
+              value={form.price ?? ''}
+              onChange={(e) => set('price', aNumero(e.target.value))}
+              placeholder="Precio"
+              aria-label="Precio"
+            />
+            <Input
+              type="number"
+              step="0.1"
+              min="0"
+              value={form.size_ml ?? ''}
+              onChange={(e) => set('size_ml', aNumero(e.target.value))}
+              placeholder="Tamaño en ml o g"
+              aria-label="Tamaño"
+            />
+            <Input
+              type="url"
+              value={form.purchase_url ?? ''}
+              onChange={(e) => set('purchase_url', e.target.value)}
+              placeholder="Link donde lo compraste"
+              aria-label="Link de compra"
+              className="sm:col-span-2"
+            />
+
+            <div>
+              <Label htmlFor="abierto">Fecha en que lo abriste</Label>
+              <Input
+                id="abierto"
+                type="date"
+                value={form.opened_at ?? ''}
+                onChange={(e) => set('opened_at', e.target.value || null)}
+              />
+            </div>
+            <div>
+              {/* El PAO es el símbolo del tarrito abierto con "6M" o "12M". */}
+              <Label htmlFor="pao">Meses de uso tras abrir (PAO)</Label>
+              <Input
+                id="pao"
+                type="number"
+                min="1"
+                max="60"
+                value={form.pao_months ?? ''}
+                onChange={(e) => set('pao_months', aNumero(e.target.value))}
+                placeholder="6"
+              />
+            </div>
+            <div>
+              <Label htmlFor="vence">Vencimiento impreso</Label>
+              <Input
+                id="vence"
+                type="date"
+                value={form.expires_at ?? ''}
+                onChange={(e) => set('expires_at', e.target.value || null)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="recompra">¿Lo volverías a comprar?</Label>
+              <Select
+                id="recompra"
+                value={form.repurchase === null ? '' : form.repurchase ? 'si' : 'no'}
+                onChange={(e) =>
+                  set('repurchase', e.target.value === '' ? null : e.target.value === 'si')
+                }
+              >
+                <option value="">Sin decidir</option>
+                <option value="si">Sí</option>
+                <option value="no">No</option>
+              </Select>
+            </div>
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={cerrar}>
@@ -259,19 +391,38 @@ export default function Productos() {
               }
             >
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <CardName>{p.name}</CardName>
+                <CardName>{p.brand ? `${p.brand} · ${p.name}` : p.name}</CardName>
                 <TimePill time={p.time_of_day} />
                 <StatusPill status={p.status} />
+                <VencimientoPill producto={p} />
               </div>
 
               <CardMeta>
-                {[p.category, p.frequency, p.price != null && `$${p.price}`]
+                {[
+                  p.category,
+                  p.frequency,
+                  p.price != null && `$${p.price}`,
+                  p.size_ml && `${p.size_ml}ml`,
+                  precioPorUnidad(p.price, p.size_ml),
+                ]
                   .filter(Boolean)
                   .join(' · ')}
               </CardMeta>
 
               {p.description && <CardMeta>{p.description}</CardMeta>}
               {p.notes && <CardNotes>{p.notes}</CardNotes>}
+
+              {p.purchase_url && (
+                <a
+                  href={p.purchase_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-1 inline-flex items-center gap-1 font-mono text-[11px] text-sage-deep underline underline-offset-2 transition-colors hover:text-sage"
+                >
+                  <ExternalLink size={11} strokeWidth={1.75} aria-hidden />
+                  Dónde lo compré
+                </a>
+              )}
 
               <Thumb path={p.image_path} alt={p.name} />
 

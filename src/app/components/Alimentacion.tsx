@@ -9,6 +9,8 @@ import { Button, IconButton } from './ui/Button';
 import { Collapse } from './ui/Collapse';
 import { Skeleton, CargandoTexto } from './ui/Skeleton';
 import { Input, Select, Textarea } from './ui/Field';
+import { Autocomplete } from './ui/Autocomplete';
+import { valoresUsados } from '@/lib/sugerencias';
 
 const CATEGORIES = [
   'Estructura',
@@ -139,9 +141,10 @@ export default function Alimentacion() {
                 <option key={c}>{c}</option>
               ))}
             </Select>
-            <Input
+            <Autocomplete
               value={form.frequency}
-              onChange={(e) => setForm({ ...form, frequency: e.target.value })}
+              onChange={(v) => setForm({ ...form, frequency: v })}
+              options={valoresUsados(foods, (f) => f.frequency)}
               placeholder="Frecuencia"
               aria-label="Frecuencia"
             />

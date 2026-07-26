@@ -9,6 +9,8 @@ import { Button, IconButton } from './ui/Button';
 import { Collapse } from './ui/Collapse';
 import { Skeleton, CargandoTexto } from './ui/Skeleton';
 import { Input, Textarea } from './ui/Field';
+import { Autocomplete } from './ui/Autocomplete';
+import { valoresUsados } from '@/lib/sugerencias';
 
 type Exercise = {
   id: string;
@@ -115,9 +117,10 @@ export default function Ejercicio() {
               placeholder="Actividad"
               aria-label="Actividad"
             />
-            <Input
+            <Autocomplete
               value={form.frequency}
-              onChange={(e) => setForm({ ...form, frequency: e.target.value })}
+              onChange={(v) => setForm({ ...form, frequency: v })}
+              options={valoresUsados(exercises, (ex) => ex.frequency)}
               placeholder="Frecuencia"
               aria-label="Frecuencia"
             />

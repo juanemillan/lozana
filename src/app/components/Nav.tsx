@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Sun, Droplet, Salad, Dumbbell, NotebookPen } from 'lucide-react';
@@ -21,9 +22,22 @@ function isActive(pathname: string, href: string) {
 
 export function Wordmark({ className = '' }: { className?: string }) {
   return (
-    <Link href="/" className={`font-serif text-[26px] tracking-[0.2px] ${className}`}>
-      <span className="font-semibold text-sage">lo</span>
-      <span className="font-light italic text-clay">zana</span>
+    <Link
+      href="/"
+      className={`inline-flex items-center gap-2 font-serif text-[26px] tracking-[0.2px] ${className}`}
+    >
+      <Image
+        src="/lozana-icon.svg"
+        alt=""
+        width={32}
+        height={32}
+        className="size-8 shrink-0"
+        unoptimized
+      />
+      <span>
+        <span className="font-semibold text-sage">lo</span>
+        <span className="font-light italic text-clay">zana</span>
+      </span>
     </Link>
   );
 }

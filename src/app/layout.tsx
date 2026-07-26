@@ -7,6 +7,16 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "lozana — bitácora de piel",
   description: "Rutina, alimentación, ejercicio y seguimiento de piel.",
+  icons: {
+    icon: [
+      { url: "/icon-16.png", sizes: "16x16", type: "image/png" },
+      { url: "/icon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icon-48.png", sizes: "48x48", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
 };
 
 // Fraunces e Inter son variable fonts: se omite `weight` para cargar el rango completo.

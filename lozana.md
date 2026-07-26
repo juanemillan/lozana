@@ -2,7 +2,8 @@
 
 ## Identidad de marca (definida)
 - Wordmark: `lozana` minúscula, "lo" bold Fraunces sage (#4F6B55), "zana" italic Fraunces terracota (#B08064)
-- Ícono: arco grueso terracota dentro de círculo sage (basado en B9-2) — **falta dibujar el SVG final a mano**
+- Ícono: arco grueso terracota dentro de círculo sage (basado en B9-2) — **hecho**
+  (`public/lozana-icon.svg`; variante instalable segura en `public/lozana-icon-maskable.svg`)
 - Tipografía: Fraunces (display, con italic), Inter (cuerpo), IBM Plex Mono (datos/fechas)
 - Paleta (Tailwind v4, vía `@theme` en `globals.css`, no `tailwind.config.ts`):
   papel `#ECE7DA`, superficie `#FBF9F3`, tinta `#2A281F`, tinta suave `#6B674F`,
@@ -62,11 +63,15 @@ web hecha por el servidor.
 - 6.2 Base visual aplicada a las secciones — **hecho**
 - 6.3 Resumen con métricas — **hecho** (`Resumen.tsx`)
 - 6.4 Edición (✎) en las 4 secciones — **hecho**
-- 6.5 Dibujar el ícono SVG final (arco + círculo) a mano — **pendiente**
+- 6.5 Dibujar el ícono SVG final (arco + círculo) a mano — **hecho**
 - 6.6 Pantalla de inicio/splash con movimiento sutil — **pendiente**
 - 6.7 (nuevo) Transiciones y movimiento — **hecho**. Ver sección aparte abajo.
 - 6.8 Tarjetas de Productos compactas y expandibles — **hecho**. La vista inicial prioriza
   foto, marca/línea, nombre, horario y frecuencia; el resto y las acciones aparecen al expandir.
+- 6.9 Manifest e iconos instalables — **hecho** (`manifest.ts`, favicon, Apple Touch Icon e
+  icono maskable para Android).
+- 6.10 Firma de marca en la interfaz — **hecho**. Símbolo y wordmark integrados en acceso,
+  onboarding, cabecera móvil y navegación de escritorio.
 
 ## ✅ Fase 7 — Autenticación y RLS real
 - 7.1 Auth email/password — **hecho** (`AuthProvider`, `LoginForm` con login y registro, `AppShell`)
@@ -235,7 +240,7 @@ Pendiente inmediato:
 1. Apagar el registro público (Authentication → Providers → Email → *Enable sign ups* en off)
 2. Confirmar si `003` se aplicó (revisar en el SQL Editor si `products.user_id` es `NOT NULL`)
 
-Después, decidir rumbo: Fase 10 (IA), el i18n con la corrección al español neutro, o cerrar
-Fase 6 (ícono SVG y splash).
+Después, decidir rumbo: el i18n con la corrección al español neutro, la pantalla splash para
+cerrar Fase 6 o Fase 10 (IA).
 
 **Cómo avanzar:** ve paso por paso. Si te trabas, pega el error o di en qué parte estás.

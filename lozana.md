@@ -96,19 +96,20 @@ web hecha por el servidor.
 - Insumo ya disponible: `repurchase` + `opened_at` + `pao_months` permiten avisar
   "se te acaba" y "está por vencer" sin pedirle nada al usuario.
 
-## Fase 10 — Integración con Claude API
-Todo esto va en Route Handlers del lado del servidor. **La `ANTHROPIC_API_KEY` nunca lleva
+## Fase 10 — Integración con OpenAI API
+Decisión y costos en [`docs/estrategia-ia.md`](docs/estrategia-ia.md). Todo esto va en Route
+Handlers del lado del servidor. **La `OPENAI_API_KEY` nunca lleva
 prefijo `NEXT_PUBLIC_`**: ese prefijo la incrusta en el bundle del navegador, y a diferencia de la
-anon key de Supabase —protegida por RLS— una clave de Anthropic expuesta la usa cualquiera.
+anon key de Supabase —protegida por RLS— una clave de OpenAI expuesta la usa cualquiera.
 
 - 10.1 Prellenar el formulario desde un link de compra — **pendiente**.
   El usuario pega la URL, el modelo lee esa página y devuelve marca / línea / nombre / tamaño /
   precio con salida estructurada. Degradar bien: si el sitio bloquea el acceso, buscar por
   nombre; si tampoco, dejar el formulario a mano.
-- 10.2 Foto del producto desde la web — **pendiente**. Claude encuentra la *dirección* de la
+- 10.2 Foto del producto desde la web — **pendiente**. El modelo encuentra la *dirección* de la
   imagen; **descargarla la hace el servidor** y la sube al bucket, para que se comporte igual que
   la cámara y el archivo local (misma compresión, misma URL firmada, mismas policies).
-  Claude no genera ni devuelve imágenes.
+  El modelo de extracción no genera ni devuelve imágenes.
 - 10.3 Análisis de rutina: conflictos entre activos y alternativas — **pendiente**.
   Es el mejor uso de los tres: razonamiento sobre conocimiento, no consulta de datos en vivo.
   El perfil (tipo de piel, preocupaciones, sensibilidades, objetivo) ya es el contexto.
@@ -116,13 +117,12 @@ anon key de Supabase —protegida por RLS— una clave de Anthropic expuesta la 
 - 10.4 Escaneo de foto de producto (etiqueta → datos) — **pendiente**
 - 10.5 Asistente conversacional con tools — **pendiente**
 
-**Modelo por tarea** (mismo SDK, solo cambia un string): Opus para visión y razonamiento,
-Sonnet para diálogo con herramientas, Haiku para tareas simples. No mezclar proveedores: la
-integración cuesta más que lo que ahorra, y los planes gratuitos suelen entrenar con tus datos
-— aquí eso son fotos de la cara de alguien y notas de salud.
+**Modelo por tarea:** GPT-5.6 Luna para normalización y extracción simple; Terra para visión,
+páginas ambiguas y análisis de rutina; Sol solo para casos complejos; GPT Image 2 para generación
+y edición visual futura. Empezar con un proveedor y una interfaz interna desacoplada del SDK.
 
 ## Fase 11 (opcional) — Extras
-- Modo reacción · Notificación redactada por Claude
+- Modo reacción · Notificación redactada por IA
 - Categorías nuevas de ejercicio (kegel, cuello, elongación, postura)
 
 ---

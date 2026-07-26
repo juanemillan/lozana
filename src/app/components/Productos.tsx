@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { X, Plus, Pencil, ImagePlus, Camera, ExternalLink } from 'lucide-react';
+import { X, Plus, Pencil, ImagePlus, Camera, ExternalLink, ChevronDown } from 'lucide-react';
 import { calcularVencimiento, etiquetaVencimiento } from '@/lib/vencimiento';
 import {
   MONEDAS,
@@ -12,10 +12,10 @@ import {
 import { supabase } from '@/lib/supabase';
 import { uploadImage } from '@/lib/uploadImage';
 import { useAuth } from './AuthProvider';
-import { Card, CardName, CardMeta, CardNotes } from './ui/Card';
+import { CardMeta, CardNotes } from './ui/Card';
 import { SectionTitle, EmptyState } from './ui/SectionTitle';
 import { Pill, TimePill, StatusPill } from './ui/Pill';
-import { Button, IconButton } from './ui/Button';
+import { Button } from './ui/Button';
 import { Collapse } from './ui/Collapse';
 import { Skeleton, CargandoTexto } from './ui/Skeleton';
 import { Input, Label, Select, Textarea } from './ui/Field';
@@ -114,6 +114,7 @@ export default function Productos() {
   const [previo, setPrevio] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   async function fetchProducts() {
     const { data, error } = await supabase
@@ -255,7 +256,10 @@ export default function Productos() {
   async function deleteProduct(id: string) {
     const { error } = await supabase.from('products').delete().eq('id', id);
     if (error) setAviso(`No se pudo eliminar: ${error.message}`);
-    else fetchProducts();
+    else {
+      setExpandedId((actual) => (actual === id ? null : actual));
+      fetchProducts();
+    }
   }
 
   // Las sugerencias salen de lo que el propio usuario ya cargó, así que son
@@ -548,59 +552,114 @@ export default function Productos() {
         <EmptyState>Nada agregado todavía.</EmptyState>
       ) : (
         <div className="anim-lista">
-          {products.map((p) => (
-            <Card
-              key={p.id}
-              actions={
-                <>
-                  <IconButton label={`Editar ${p.name}`} onClick={() => editar(p)}>
-                    <Pencil size={13} strokeWidth={2} aria-hidden />
-                  </IconButton>
-                  <IconButton label={`Eliminar ${p.name}`} onClick={() => deleteProduct(p.id)}>
-                    <X size={13} strokeWidth={2} aria-hidden />
-                  </IconButton>
-                </>
-              }
-            >
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <CardName>{[p.brand, p.product_line, p.name].filter(Boolean).join(' · ')}</CardName>
-                <TimePill time={p.time_of_day} />
-                <StatusPill status={p.status} />
-                <VencimientoPill producto={p} />
-              </div>
+          {products.map((p) => {
+            const expanded = expandedId === p.id;
+            const panelId = `producto-detalle-${p.id}`;
+            const jerarquia = [p.brand, p.product_line].filter(Boolean).join(' · ');
+            const compra = [
+              formatearPrecio(p.price, p.currency_code),
+              formatearTamano(p.size_value, p.size_unit),
+              precioPorUnidad(p.price, p.currency_code, p.size_value, p.size_unit),
+            ]
+              .filter(Boolean)
+              .join(' · ');
 
-              <CardMeta>
-                {[
-                  p.category,
-                  p.frequency,
-                  formatearPrecio(p.price, p.currency_code),
-                  formatearTamano(p.size_value, p.size_unit),
-                  precioPorUnidad(p.price, p.currency_code, p.size_value, p.size_unit),
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
-              </CardMeta>
+            return (
+              <article
+                key={p.id}
+                className="mb-2 overflow-hidden rounded-[10px] border border-line bg-surface transition-colors hover:border-line-strong"
+              >
+                <h3>
+                  <button
+                    type="button"
+                    aria-expanded={expanded}
+                    aria-controls={panelId}
+                    onClick={() => setExpandedId(expanded ? null : p.id)}
+                    className="flex w-full cursor-pointer items-center gap-3 px-3.5 py-3 text-left
+                      focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-sage"
+                  >
+                    <Thumb
+                      path={p.image_path}
+                      alt=""
+                      fallback={p.name}
+                      placeholder
+                      className="block size-14"
+                    />
 
-              {p.description && <CardMeta>{p.description}</CardMeta>}
-              {p.notes && <CardNotes>{p.notes}</CardNotes>}
+                    <span className="min-w-0 flex-1">
+                      {jerarquia && (
+                        <span className="block truncate font-mono text-[10px] uppercase tracking-wide text-ink-soft">
+                          {jerarquia}
+                        </span>
+                      )}
+                      <span className="mt-0.5 block text-sm font-medium leading-snug">{p.name}</span>
+                      <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                        <TimePill time={p.time_of_day} />
+                        {p.frequency && (
+                          <span className="font-mono text-[10px] text-ink-soft">{p.frequency}</span>
+                        )}
+                        {p.status !== 'Activo' && <StatusPill status={p.status} />}
+                        <VencimientoPill producto={p} />
+                      </span>
+                    </span>
 
-              {p.purchase_url && (
-                <a
-                  href={p.purchase_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-1 inline-flex items-center gap-1 font-mono text-[11px] text-sage-deep underline underline-offset-2 transition-colors hover:text-sage"
+                    <ChevronDown
+                      size={17}
+                      strokeWidth={1.75}
+                      aria-hidden
+                      className={`shrink-0 text-ink-soft transition-transform duration-[260ms] ${
+                        expanded ? 'rotate-180' : ''
+                      }`}
+                    />
+                  </button>
+                </h3>
+
+                <div
+                  id={panelId}
+                  aria-hidden={!expanded}
+                  className={`grid transition-[grid-template-rows,opacity] duration-[260ms] ease-suave ${
+                    expanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+                  }`}
                 >
-                  <ExternalLink size={11} strokeWidth={1.75} aria-hidden />
-                  Dónde lo compré
-                </a>
-              )}
+                  <div inert={!expanded} className="overflow-hidden">
+                    <div className="border-t border-line px-3.5 pt-3 pb-3">
+                      <CardMeta>{[p.category, compra].filter(Boolean).join(' · ')}</CardMeta>
+                      {p.description && <CardMeta>{p.description}</CardMeta>}
+                      {p.notes && <CardNotes>{p.notes}</CardNotes>}
 
-              {/* La foto se gestiona desde el formulario de edición: tenerla
-                  también aquí duplicaba el control y subía sin confirmar. */}
-              <Thumb path={p.image_path} alt={p.name} />
-            </Card>
-          ))}
+                      {p.purchase_url && (
+                        <a
+                          href={p.purchase_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-2 inline-flex items-center gap-1 font-mono text-[11px] text-sage-deep underline underline-offset-2 transition-colors hover:text-sage"
+                        >
+                          <ExternalLink size={11} strokeWidth={1.75} aria-hidden />
+                          Dónde lo compré
+                        </a>
+                      )}
+
+                      <div className="mt-3 flex justify-end gap-2 border-t border-line pt-3">
+                        <Button variant="ghost" onClick={() => editar(p)}>
+                          <Pencil size={13} strokeWidth={2} aria-hidden />
+                          Editar
+                        </Button>
+                        <Button
+                          variant="danger"
+                          onClick={() => {
+                            if (window.confirm(`¿Eliminar “${p.name}”?`)) deleteProduct(p.id);
+                          }}
+                        >
+                          <X size={13} strokeWidth={2} aria-hidden />
+                          Eliminar
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
         </div>
       )}
     </div>

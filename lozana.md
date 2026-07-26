@@ -65,6 +65,8 @@ web hecha por el servidor.
 - 6.5 Dibujar el ícono SVG final (arco + círculo) a mano — **pendiente**
 - 6.6 Pantalla de inicio/splash con movimiento sutil — **pendiente**
 - 6.7 (nuevo) Transiciones y movimiento — **hecho**. Ver sección aparte abajo.
+- 6.8 Tarjetas de Productos compactas y expandibles — **hecho**. La vista inicial prioriza
+  foto, marca/línea, nombre, horario y frecuencia; el resto y las acciones aparecen al expandir.
 
 ## ✅ Fase 7 — Autenticación y RLS real
 - 7.1 Auth email/password — **hecho** (`AuthProvider`, `LoginForm` con login y registro, `AppShell`)

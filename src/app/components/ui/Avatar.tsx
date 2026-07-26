@@ -36,15 +36,36 @@ export function Avatar({
 }
 
 /** Miniatura cuadrada para las tarjetas de producto. */
-export function Thumb({ path, alt }: { path: string | null; alt: string }) {
+export function Thumb({
+  path,
+  alt,
+  className = 'mt-2 block size-14',
+  placeholder = false,
+  fallback = alt,
+}: {
+  path: string | null;
+  alt: string;
+  className?: string;
+  placeholder?: boolean;
+  fallback?: string;
+}) {
   const url = useSignedUrl(path);
-  if (!path) return null;
+  if (!path && !placeholder) return null;
 
   return (
-    <span className="mt-2 block size-14 overflow-hidden rounded-md border border-line bg-paper">
-      {url && (
+    <span
+      className={`${className} shrink-0 overflow-hidden rounded-md border border-line bg-paper`}
+    >
+      {url ? (
         // eslint-disable-next-line @next/next/no-img-element -- ídem Avatar
         <img src={url} alt={alt} className="size-full object-cover" />
+      ) : (
+        <span
+          className="flex size-full items-center justify-center font-serif text-lg text-ink-soft/45"
+          aria-hidden
+        >
+          {fallback.trim().charAt(0).toUpperCase() || '·'}
+        </span>
       )}
     </span>
   );

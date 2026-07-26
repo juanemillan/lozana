@@ -30,8 +30,12 @@ export function Nav() {
 
   return (
     <>
-      {/* Desktop: sidebar fija */}
-      <aside className="fixed inset-y-0 left-0 hidden w-56 flex-col border-r border-line bg-surface px-4 py-7 md:flex">
+      {/* Desktop: sidebar fija. El viewTransitionName la ancla durante las
+          navegaciones para que no se desplace junto con el contenido. */}
+      <aside
+        style={{ viewTransitionName: 'lz-nav-lateral' }}
+        className="fixed inset-y-0 left-0 hidden w-56 flex-col border-r border-line bg-surface px-4 py-7 md:flex"
+      >
         <Wordmark className="mb-8 px-2.5" />
         <nav className="flex flex-col gap-1">
           {items.map(({ href, label, icon: Icon }) => {
@@ -56,7 +60,10 @@ export function Nav() {
       </aside>
 
       {/* Mobile: barra inferior fija. pb-safe evita que la home indicator de iOS la tape. */}
-      <nav className="fixed inset-x-0 bottom-0 z-50 flex border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] md:hidden">
+      <nav
+        style={{ viewTransitionName: 'lz-nav-inferior' }}
+        className="fixed inset-x-0 bottom-0 z-50 flex border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] md:hidden"
+      >
         {items.map(({ href, label, icon: Icon }) => {
           const active = isActive(pathname, href);
           return (

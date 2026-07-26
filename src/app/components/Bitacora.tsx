@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from './AuthProvider';
 import { SectionTitle, EmptyState } from './ui/SectionTitle';
 import { Button, IconButton } from './ui/Button';
+import { Collapse } from './ui/Collapse';
 import { Input, Textarea } from './ui/Field';
 
 type LogEntry = {
@@ -93,7 +94,7 @@ export default function Bitacora() {
         Bitácora / seguimiento
       </SectionTitle>
 
-      {open && (
+      <Collapse open={open}>
         <form
           onSubmit={handleSubmit}
           className="mb-3 rounded-[10px] border border-dashed border-line-strong bg-surface p-3.5"
@@ -112,7 +113,6 @@ export default function Bitacora() {
               placeholder="Qué notaste, qué cambiaste, cómo reaccionó la piel..."
               aria-label="Entrada"
               rows={3}
-              autoFocus
             />
           </div>
           <div className="flex justify-end gap-2">
@@ -122,7 +122,7 @@ export default function Bitacora() {
             <Button type="submit">{editing ? 'Guardar cambios' : 'Guardar'}</Button>
           </div>
         </form>
-      )}
+      </Collapse>
 
       {logs.length === 0 ? (
         <EmptyState>Sin entradas todavía.</EmptyState>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, ViewTransition } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from './AuthProvider';
@@ -43,7 +43,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* md:pl-56 deja el espacio de la sidebar; pb-24 el de la barra inferior. */}
       <div className="md:pl-56">
         <div className="mx-auto max-w-[920px] px-5 pt-7 pb-24 md:pb-14">
-          <header className="mb-5 flex items-baseline justify-between gap-3 border-b-2 border-ink pb-3.5">
+          <header
+            style={{ viewTransitionName: 'lz-encabezado' }}
+            className="mb-5 flex items-baseline justify-between gap-3 border-b-2 border-ink pb-3.5"
+          >
             <Wordmark className="md:hidden" />
             <h1 className="hidden text-[26px] md:block">Bitácora de piel</h1>
 
@@ -63,7 +66,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           </header>
 
-          <main>{children}</main>
+          {/* default="none" evita que esta transición se dispare con cambios
+              ajenos a la navegación, como abrir un formulario. */}
+          <ViewTransition enter="lz-seccion" exit="lz-seccion" default="none">
+            <main>{children}</main>
+          </ViewTransition>
         </div>
       </div>
     </>

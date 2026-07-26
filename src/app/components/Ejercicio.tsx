@@ -6,6 +6,7 @@ import { useAuth } from './AuthProvider';
 import { Card, CardName, CardMeta, CardNotes } from './ui/Card';
 import { SectionTitle, EmptyState } from './ui/SectionTitle';
 import { Button, IconButton } from './ui/Button';
+import { Collapse } from './ui/Collapse';
 import { Input, Textarea } from './ui/Field';
 
 type Exercise = {
@@ -95,7 +96,7 @@ export default function Ejercicio() {
         Ejercicio y hábitos
       </SectionTitle>
 
-      {open && (
+      <Collapse open={open}>
         <form
           onSubmit={handleSubmit}
           className="mb-3 rounded-[10px] border border-dashed border-line-strong bg-surface p-3.5"
@@ -106,7 +107,6 @@ export default function Ejercicio() {
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               placeholder="Actividad"
               aria-label="Actividad"
-              autoFocus
             />
             <Input
               value={form.frequency}
@@ -129,7 +129,7 @@ export default function Ejercicio() {
             <Button type="submit">{editing ? 'Guardar cambios' : 'Guardar'}</Button>
           </div>
         </form>
-      )}
+      </Collapse>
 
       {exercises.length === 0 ? (
         <EmptyState>Nada agregado todavía.</EmptyState>

@@ -51,3 +51,127 @@
     font-weight: 500;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Movimiento
+   Curvas y duraciones compartidas. La salida siempre es más rápida que la
+   entrada: lo viejo debe irse sin competir por la atención, lo nuevo debe
+   llegar con calma. Desplazamientos cortos, acordes al tono editorial.
+   --------------------------------------------------------------------------- */
+
+@theme {
+  --ease-suave: cubic-bezier(0.32, 0.72, 0, 1);
+  --duracion-salida: 140ms;
+  --duracion-entrada: 260ms;
+}
+
+@keyframes lz-aparecer {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes lz-subir {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes lz-entrar-derecha {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes lz-entrar-izquierda {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@utility anim-subir {
+  animation: lz-subir var(--duracion-entrada) var(--ease-suave) both;
+}
+
+@utility anim-entrar-derecha {
+  animation: lz-entrar-derecha var(--duracion-entrada) var(--ease-suave) both;
+}
+
+@utility anim-entrar-izquierda {
+  animation: lz-entrar-izquierda var(--duracion-entrada) var(--ease-suave) both;
+}
+
+/* Transiciones de ruta: fundido cruzado. Las secciones son hermanas, no una
+   jerarquía, así que un deslizamiento direccional daría una señal falsa. */
+::view-transition-old(.lz-seccion) {
+  animation: var(--duracion-salida) var(--ease-suave) both lz-aparecer reverse;
+}
+
+::view-transition-new(.lz-seccion) {
+  animation: var(--duracion-entrada) var(--ease-suave) var(--duracion-salida) both lz-subir;
+}
+
+/* El armazón queda anclado: si la navegación y el encabezado se movieran, el
+   usuario perdería el punto de referencia que le dice que cambió el contenido
+   y no la página entera. */
+::view-transition-group(lz-nav-lateral),
+::view-transition-group(lz-nav-inferior),
+::view-transition-group(lz-encabezado) {
+  animation: none;
+  z-index: 10;
+}
+
+::view-transition-old(lz-nav-lateral),
+::view-transition-old(lz-nav-inferior),
+::view-transition-old(lz-encabezado) {
+  display: none;
+}
+
+::view-transition-new(lz-nav-lateral),
+::view-transition-new(lz-nav-inferior),
+::view-transition-new(lz-encabezado) {
+  animation: none;
+}
+
+/* Quien pidió menos movimiento recibe los mismos cambios, sin desplazamientos.
+   Se conservan los fundidos, que rara vez causan molestia, y se eliminan las
+   traslaciones, que son el disparador habitual del malestar vestibular. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+  }
+
+  .anim-subir,
+  .anim-entrar-derecha,
+  .anim-entrar-izquierda {
+    animation: lz-aparecer 1ms both;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition-duration: 1ms !important;
+    animation-duration: 1ms !important;
+  }
+}

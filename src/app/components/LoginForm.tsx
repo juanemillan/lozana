@@ -81,7 +81,7 @@ export function LoginForm() {
     <div className="flex min-h-screen items-center justify-center px-5">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-80 rounded-[10px] border border-line bg-surface p-6"
+        className="anim-subir w-full max-w-80 rounded-[10px] border border-line bg-surface p-6"
       >
         <Wordmark className="mb-1 block" />
         <p className="mb-5 text-[13px] text-ink-soft">

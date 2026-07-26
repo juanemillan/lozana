@@ -6,6 +6,7 @@ import { useAuth } from './AuthProvider';
 import { Card, CardName, CardMeta, CardNotes } from './ui/Card';
 import { SectionTitle, EmptyState } from './ui/SectionTitle';
 import { Button, IconButton } from './ui/Button';
+import { Collapse } from './ui/Collapse';
 import { Input, Select, Textarea } from './ui/Field';
 
 const CATEGORIES = [
@@ -110,7 +111,7 @@ export default function Alimentacion() {
         Alimentación
       </SectionTitle>
 
-      {open && (
+      <Collapse open={open}>
         <form
           onSubmit={handleSubmit}
           className="mb-3 rounded-[10px] border border-dashed border-line-strong bg-surface p-3.5"
@@ -121,7 +122,6 @@ export default function Alimentacion() {
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               placeholder="Alimento o hábito"
               aria-label="Alimento o hábito"
-              autoFocus
             />
             <Select
               value={form.category}
@@ -152,7 +152,7 @@ export default function Alimentacion() {
             <Button type="submit">{editing ? 'Guardar cambios' : 'Guardar'}</Button>
           </div>
         </form>
-      )}
+      </Collapse>
 
       {foods.length === 0 ? (
         <EmptyState>Nada agregado todavía.</EmptyState>

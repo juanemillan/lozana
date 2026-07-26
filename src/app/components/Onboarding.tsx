@@ -20,9 +20,17 @@ const PASOS = [
 export function Onboarding({ onDone }: { onDone: () => void }) {
   const { user, refreshProfile } = useAuth();
   const [paso, setPaso] = useState(0);
+  const [avanzando, setAvanzando] = useState(true);
   const [draft, setDraft] = useState<ProfileDraft>(EMPTY_DRAFT);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // La dirección del movimiento indica si se avanza o se retrocede. Sin esa
+  // señal, ir y volver entre pasos se ve idéntico y desorienta.
+  function irA(siguiente: number) {
+    setAvanzando(siguiente > paso);
+    setPaso(siguiente);
+  }
 
   function set<K extends keyof ProfileDraft>(key: K, value: ProfileDraft[K]) {
     setDraft((d) => ({ ...d, [key]: value }));
@@ -64,7 +72,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-5 py-10">
-      <div className="w-full max-w-md rounded-[10px] border border-line bg-surface p-6">
+      <div className="anim-subir w-full max-w-md rounded-[10px] border border-line bg-surface p-6">
         <Wordmark className="mb-5 block" />
 
         {/* Progreso */}
@@ -72,15 +80,23 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
           {PASOS.map((_, i) => (
             <div
               key={i}
-              className={`h-1 flex-1 rounded-full ${i <= paso ? 'bg-sage' : 'bg-line'}`}
+              className={`h-1 flex-1 rounded-full transition-colors duration-[400ms] ease-suave ${
+                i <= paso ? 'bg-sage' : 'bg-line'
+              }`}
             />
           ))}
         </div>
 
-        <h2 className="text-xl">{PASOS[paso].titulo}</h2>
-        <p className="mt-1 mb-5 text-[13px] text-ink-soft">{PASOS[paso].sub}</p>
+        {/* key={paso} remonta el bloque, que es lo que vuelve a disparar la
+            animación. min-h evita que la tarjeta salte de alto entre pasos. */}
+        <div
+          key={paso}
+          className={`min-h-64 ${avanzando ? 'anim-entrar-derecha' : 'anim-entrar-izquierda'}`}
+        >
+          <h2 className="text-xl">{PASOS[paso].titulo}</h2>
+          <p className="mt-1 mb-5 text-[13px] text-ink-soft">{PASOS[paso].sub}</p>
 
-        {paso === 0 && (
+          {paso === 0 && (
           <div className="flex flex-col gap-4">
             <div>
               <Label htmlFor="nombre">¿Cómo te llamás?</Label>
@@ -149,8 +165,9 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
                 rows={2}
               />
             </div>
-          </div>
-        )}
+            </div>
+          )}
+        </div>
 
         {error && (
           <p role="alert" className="mt-4 text-xs text-plum-deep">
@@ -169,7 +186,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
 
           <div className="flex gap-2">
             {paso > 0 && (
-              <Button variant="ghost" onClick={() => setPaso((p) => p - 1)}>
+              <Button variant="ghost" onClick={() => irA(paso - 1)}>
                 Atrás
               </Button>
             )}
@@ -178,7 +195,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
                 {busy ? 'Guardando...' : 'Listo'}
               </Button>
             ) : (
-              <Button onClick={() => setPaso((p) => p + 1)}>Siguiente</Button>
+              <Button onClick={() => irA(paso + 1)}>Siguiente</Button>
             )}
           </div>
         </div>

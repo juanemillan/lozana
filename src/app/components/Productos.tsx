@@ -8,6 +8,7 @@ import { Card, CardName, CardMeta, CardNotes } from './ui/Card';
 import { SectionTitle, EmptyState } from './ui/SectionTitle';
 import { TimePill, StatusPill } from './ui/Pill';
 import { Button, IconButton } from './ui/Button';
+import { Collapse } from './ui/Collapse';
 import { Input, Select, Textarea } from './ui/Field';
 import { Thumb } from './ui/Avatar';
 
@@ -154,7 +155,7 @@ export default function Productos() {
         Productos
       </SectionTitle>
 
-      {open && (
+      <Collapse open={open}>
         <form
           onSubmit={handleSubmit}
           className="mb-3 rounded-[10px] border border-dashed border-line-strong bg-surface p-3.5"
@@ -166,7 +167,6 @@ export default function Productos() {
               placeholder="Nombre del producto"
               aria-label="Nombre"
               className="sm:col-span-2"
-              autoFocus
             />
             <Select
               value={form.category}
@@ -231,7 +231,7 @@ export default function Productos() {
             <Button type="submit">{editing ? 'Guardar cambios' : 'Guardar'}</Button>
           </div>
         </form>
-      )}
+      </Collapse>
 
       {products.length === 0 ? (
         <EmptyState>Nada agregado todavía.</EmptyState>

@@ -61,8 +61,15 @@
 
 @theme {
   --ease-suave: cubic-bezier(0.32, 0.72, 0, 1);
-  --duracion-salida: 140ms;
-  --duracion-entrada: 260ms;
+  --duracion-salida: 180ms;
+  --duracion-entrada: 380ms;
+  --escalon-lista: 45ms;
+  /* El cruce entre vistas es lo más largo de la interfaz: es un cambio de
+     contexto, y darle tiempo es lo que lo separa de un salto. */
+  --duracion-vista: 650ms;
+  /* Margen antes de mostrar el esqueleto de carga. Si los datos llegan antes,
+     el esqueleto no llega a verse nunca. */
+  --retraso-esqueleto: 400ms;
 }
 
 @keyframes lz-aparecer {
@@ -111,6 +118,55 @@
   animation: lz-subir var(--duracion-entrada) var(--ease-suave) both;
 }
 
+/* Escalonado de listas: las tarjetas entran en cascada en vez de aparecer
+   todas de golpe. Se limita a las primeras seis — más allá, la espera de la
+   última se vuelve perceptible y deja de sentirse fluido. */
+@utility anim-lista {
+  & > * {
+    animation: lz-subir var(--duracion-entrada) var(--ease-suave) both;
+  }
+  & > *:nth-child(2) {
+    animation-delay: calc(var(--escalon-lista) * 1);
+  }
+  & > *:nth-child(3) {
+    animation-delay: calc(var(--escalon-lista) * 2);
+  }
+  & > *:nth-child(4) {
+    animation-delay: calc(var(--escalon-lista) * 3);
+  }
+  & > *:nth-child(5) {
+    animation-delay: calc(var(--escalon-lista) * 4);
+  }
+  & > *:nth-child(n + 6) {
+    animation-delay: calc(var(--escalon-lista) * 5);
+  }
+}
+
+/* Latido del esqueleto de carga: muy tenue y lento, para que se lea como
+   "esto está en camino" y no como algo parpadeando. */
+@keyframes lz-latido {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+@utility anim-latido {
+  animation: lz-latido 1.8s var(--ease-suave) infinite;
+}
+
+/* El esqueleto arranca invisible y solo aparece si la espera se alarga.
+   Mostrarlo y retirarlo en 100ms produce un parpadeo de tarjetas fantasma
+   que molesta más que no mostrar nada: el ojo registra el destello, no el
+   contenido. Con `both`, durante el retraso se queda en el fotograma inicial. */
+@utility anim-esqueleto {
+  animation: lz-aparecer var(--duracion-entrada) var(--ease-suave)
+    var(--retraso-esqueleto) both;
+}
+
 @utility anim-entrar-derecha {
   animation: lz-entrar-derecha var(--duracion-entrada) var(--ease-suave) both;
 }
@@ -120,13 +176,63 @@
 }
 
 /* Transiciones de ruta: fundido cruzado. Las secciones son hermanas, no una
-   jerarquía, así que un deslizamiento direccional daría una señal falsa. */
+   jerarquía, así que un deslizamiento direccional daría una señal falsa.
+
+   Las dos animaciones corren a la vez y con la misma duración. Encadenarlas
+   —esperar a que la vieja termine para empezar la nueva— deja un intervalo
+   con la pantalla vacía, y ese hueco es lo que se percibe como un corte.
+
+   El desenfoque no es decorativo: durante el cruce hay dos capas
+   superpuestas a media opacidad, y el texto de ambas se lee como si estuviera
+   duplicado. Difuminarlas oculta ese cruce y es lo que da la sensación suave. */
+::view-transition-old(.lz-seccion),
+::view-transition-new(.lz-seccion) {
+  /* Los fotogramas se comportan como elementos reemplazados. Sin esto el
+     navegador estira el viejo hasta el alto del nuevo, y como cada sección
+     tiene un largo distinto, el contenido se deforma al cruzarse. */
+  height: 100%;
+  object-fit: contain;
+  object-position: top center;
+}
+
 ::view-transition-old(.lz-seccion) {
-  animation: var(--duracion-salida) var(--ease-suave) both lz-aparecer reverse;
+  animation: var(--duracion-vista) var(--ease-suave) both lz-vista-sale;
 }
 
 ::view-transition-new(.lz-seccion) {
-  animation: var(--duracion-entrada) var(--ease-suave) var(--duracion-salida) both lz-subir;
+  animation: var(--duracion-vista) var(--ease-suave) both lz-vista-entra;
+}
+
+/* El grupo controla el reajuste de tamaño entre una vista y otra. Sin fijarlo,
+   corre con el valor por defecto del navegador (250ms) y compite con el resto,
+   que es la otra mitad de la sensación de brusquedad. */
+::view-transition-group(.lz-seccion) {
+  animation-duration: var(--duracion-vista);
+  animation-timing-function: var(--ease-suave);
+}
+
+@keyframes lz-vista-sale {
+  from {
+    opacity: 1;
+    filter: blur(0);
+  }
+  to {
+    opacity: 0;
+    filter: blur(5px);
+  }
+}
+
+@keyframes lz-vista-entra {
+  from {
+    opacity: 0;
+    filter: blur(5px);
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
 }
 
 /* El armazón queda anclado: si la navegación y el encabezado se movieran, el
@@ -164,8 +270,15 @@
 
   .anim-subir,
   .anim-entrar-derecha,
-  .anim-entrar-izquierda {
-    animation: lz-aparecer 1ms both;
+  .anim-entrar-izquierda,
+  .anim-lista > * {
+    animation: lz-aparecer 1ms both !important;
+  }
+
+  /* El latido se conserva: no hay desplazamiento y sin él no habría señal
+     de que algo está cargando. Solo se ralentiza. */
+  .anim-latido {
+    animation: lz-latido 3s ease-in-out infinite !important;
   }
 
   *,

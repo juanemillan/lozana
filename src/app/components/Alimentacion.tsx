@@ -7,6 +7,7 @@ import { Card, CardName, CardMeta, CardNotes } from './ui/Card';
 import { SectionTitle, EmptyState } from './ui/SectionTitle';
 import { Button, IconButton } from './ui/Button';
 import { Collapse } from './ui/Collapse';
+import { Skeleton, CargandoTexto } from './ui/Skeleton';
 import { Input, Select, Textarea } from './ui/Field';
 
 const CATEGORIES = [
@@ -96,10 +97,16 @@ export default function Alimentacion() {
     })();
   }, []);
 
-  if (loading) return <p className="text-[13px] text-ink-soft">Cargando...</p>;
+  if (loading)
+    return (
+      <>
+        <Skeleton filas={3} />
+        <CargandoTexto />
+      </>
+    );
 
   return (
-    <div>
+    <div className="anim-subir">
       <SectionTitle
         action={
           <Button onClick={() => (open ? cerrar() : nuevo())}>
@@ -157,25 +164,27 @@ export default function Alimentacion() {
       {foods.length === 0 ? (
         <EmptyState>Nada agregado todavía.</EmptyState>
       ) : (
-        foods.map((f) => (
-          <Card
-            key={f.id}
-            actions={
-              <>
-                <IconButton label={`Editar ${f.name}`} onClick={() => editar(f)}>
-                  <Pencil size={13} strokeWidth={2} aria-hidden />
-                </IconButton>
-                <IconButton label={`Eliminar ${f.name}`} onClick={() => deleteFood(f.id)}>
-                  <X size={13} strokeWidth={2} aria-hidden />
-                </IconButton>
-              </>
-            }
-          >
-            <CardName>{f.name}</CardName>
-            <CardMeta>{[f.category, f.frequency].filter(Boolean).join(' · ')}</CardMeta>
-            {f.notes && <CardNotes>{f.notes}</CardNotes>}
-          </Card>
-        ))
+        <div className="anim-lista">
+          {foods.map((f) => (
+            <Card
+              key={f.id}
+              actions={
+                <>
+                  <IconButton label={`Editar ${f.name}`} onClick={() => editar(f)}>
+                    <Pencil size={13} strokeWidth={2} aria-hidden />
+                  </IconButton>
+                  <IconButton label={`Eliminar ${f.name}`} onClick={() => deleteFood(f.id)}>
+                    <X size={13} strokeWidth={2} aria-hidden />
+                  </IconButton>
+                </>
+              }
+            >
+              <CardName>{f.name}</CardName>
+              <CardMeta>{[f.category, f.frequency].filter(Boolean).join(' · ')}</CardMeta>
+              {f.notes && <CardNotes>{f.notes}</CardNotes>}
+            </Card>
+          ))}
+        </div>
       )}
     </div>
   );

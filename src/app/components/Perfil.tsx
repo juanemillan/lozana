@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { LogOut, ImagePlus } from 'lucide-react';
+import { LogOut, ImagePlus, Camera } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { uploadImage, removeImage } from '@/lib/uploadImage';
 import { useAuth } from './AuthProvider';
@@ -59,6 +59,13 @@ export default function Perfil() {
     setBusy(false);
   }
 
+  function elegirArchivo(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    // Se limpia el input para que volver a elegir el mismo archivo dispare el evento.
+    e.target.value = '';
+    if (file) cambiarFoto(file);
+  }
+
   async function cambiarFoto(file: File) {
     if (!user) return;
     setSubiendo(true);
@@ -86,7 +93,8 @@ export default function Perfil() {
   if (!user) return null;
 
   return (
-    <div>
+    // anim-lista escalona los tres bloques: título, identidad y formulario.
+    <div className="anim-lista">
       <SectionTitle
         action={
           <Button variant="ghost" onClick={() => supabase.auth.signOut()}>
@@ -103,21 +111,41 @@ export default function Perfil() {
         <div className="min-w-0">
           <p className="truncate text-sm font-medium">{profile?.full_name || 'Sin nombre'}</p>
           <p className="truncate text-xs text-ink-soft">{user.email}</p>
-          <label className="mt-1.5 inline-flex cursor-pointer items-center gap-1.5 font-mono text-[11px] text-ink-soft hover:text-sage-deep">
-            <ImagePlus size={13} strokeWidth={1.75} aria-hidden />
-            {subiendo ? 'Subiendo...' : profile?.avatar_path ? 'Cambiar foto' : 'Agregar foto'}
-            <input
-              type="file"
-              accept="image/*"
-              className="sr-only"
-              disabled={subiendo}
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) cambiarFoto(file);
-                e.target.value = '';
-              }}
-            />
-          </label>
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+            {subiendo ? (
+              <span className="font-mono text-[11px] text-ink-soft">Subiendo...</span>
+            ) : (
+              <>
+                <label className="inline-flex cursor-pointer items-center gap-1.5 font-mono text-[11px] text-ink-soft transition-colors hover:text-sage-deep">
+                  <ImagePlus size={13} strokeWidth={1.75} aria-hidden />
+                  {profile?.avatar_path ? 'Cambiar foto' : 'Subir foto'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="sr-only"
+                    onChange={elegirArchivo}
+                  />
+                </label>
+
+                {/* capture abre directamente la cámara frontal en móvil.
+                    En escritorio el atributo se ignora y abriría el mismo
+                    selector de archivos que el botón de al lado, así que ahí
+                    se oculta: una etiqueta que promete cámara y da un
+                    explorador de archivos confunde más de lo que ayuda. */}
+                <label className="inline-flex cursor-pointer items-center gap-1.5 font-mono text-[11px] text-ink-soft transition-colors hover:text-sage-deep md:hidden">
+                  <Camera size={13} strokeWidth={1.75} aria-hidden />
+                  Tomar foto
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="user"
+                    className="sr-only"
+                    onChange={elegirArchivo}
+                  />
+                </label>
+              </>
+            )}
+          </div>
         </div>
       </div>
 

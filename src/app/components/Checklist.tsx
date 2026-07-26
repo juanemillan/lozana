@@ -4,6 +4,7 @@ import { Flame } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from './AuthProvider';
 import { SectionTitle, EmptyState } from './ui/SectionTitle';
+import { Skeleton, CargandoTexto } from './ui/Skeleton';
 
 type ChecklistItem = {
   product_id: string;
@@ -132,10 +133,16 @@ export default function Checklist() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (loading) return <p className="text-[13px] text-ink-soft">Cargando...</p>;
+  if (loading)
+    return (
+      <>
+        <Skeleton filas={4} />
+        <CargandoTexto />
+      </>
+    );
 
   return (
-    <div>
+    <div className="anim-subir">
       <SectionTitle
         action={
           <span className="inline-flex items-center gap-1.5 font-mono text-xs text-clay-deep">
@@ -150,7 +157,7 @@ export default function Checklist() {
       {items.length === 0 ? (
         <EmptyState>Sin productos activos. Agregá algunos en Productos.</EmptyState>
       ) : (
-        <div className="overflow-hidden rounded-[10px] border border-line bg-surface">
+        <div className="anim-lista overflow-hidden rounded-[10px] border border-line bg-surface">
           {items.map((item) => (
             <div
               key={item.product_id}

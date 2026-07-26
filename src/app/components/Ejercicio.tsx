@@ -7,6 +7,7 @@ import { Card, CardName, CardMeta, CardNotes } from './ui/Card';
 import { SectionTitle, EmptyState } from './ui/SectionTitle';
 import { Button, IconButton } from './ui/Button';
 import { Collapse } from './ui/Collapse';
+import { Skeleton, CargandoTexto } from './ui/Skeleton';
 import { Input, Textarea } from './ui/Field';
 
 type Exercise = {
@@ -81,10 +82,16 @@ export default function Ejercicio() {
     })();
   }, []);
 
-  if (loading) return <p className="text-[13px] text-ink-soft">Cargando...</p>;
+  if (loading)
+    return (
+      <>
+        <Skeleton filas={3} />
+        <CargandoTexto />
+      </>
+    );
 
   return (
-    <div>
+    <div className="anim-subir">
       <SectionTitle
         action={
           <Button onClick={() => (open ? cerrar() : nuevo())}>
@@ -134,25 +141,27 @@ export default function Ejercicio() {
       {exercises.length === 0 ? (
         <EmptyState>Nada agregado todavía.</EmptyState>
       ) : (
-        exercises.map((ex) => (
-          <Card
-            key={ex.id}
-            actions={
-              <>
-                <IconButton label={`Editar ${ex.name}`} onClick={() => editar(ex)}>
-                  <Pencil size={13} strokeWidth={2} aria-hidden />
-                </IconButton>
-                <IconButton label={`Eliminar ${ex.name}`} onClick={() => deleteExercise(ex.id)}>
-                  <X size={13} strokeWidth={2} aria-hidden />
-                </IconButton>
-              </>
-            }
-          >
-            <CardName>{ex.name}</CardName>
-            <CardMeta>{ex.frequency}</CardMeta>
-            {ex.notes && <CardNotes>{ex.notes}</CardNotes>}
-          </Card>
-        ))
+        <div className="anim-lista">
+          {exercises.map((ex) => (
+            <Card
+              key={ex.id}
+              actions={
+                <>
+                  <IconButton label={`Editar ${ex.name}`} onClick={() => editar(ex)}>
+                    <Pencil size={13} strokeWidth={2} aria-hidden />
+                  </IconButton>
+                  <IconButton label={`Eliminar ${ex.name}`} onClick={() => deleteExercise(ex.id)}>
+                    <X size={13} strokeWidth={2} aria-hidden />
+                  </IconButton>
+                </>
+              }
+            >
+              <CardName>{ex.name}</CardName>
+              <CardMeta>{ex.frequency}</CardMeta>
+              {ex.notes && <CardNotes>{ex.notes}</CardNotes>}
+            </Card>
+          ))}
+        </div>
       )}
     </div>
   );

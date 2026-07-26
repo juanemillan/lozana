@@ -4,9 +4,10 @@
  */
 export function Card({ children, actions }: { children: React.ReactNode; actions?: React.ReactNode }) {
   return (
-    // anim-subir se dispara al montar. React reutiliza el DOM por key, así que
-    // solo animan las tarjetas nuevas, no la lista entera en cada refetch.
-    <div className="anim-subir mb-2 flex items-start justify-between gap-2.5 rounded-[10px] border border-line bg-surface px-3.5 py-3 transition-colors hover:border-line-strong">
+    // La animación de entrada la aplica el contenedor .anim-lista, que además
+    // escalona los retrasos. Ponerla también aquí reiniciaría esos retrasos,
+    // porque la forma abreviada `animation` resetea animation-delay.
+    <div className="mb-2 flex items-start justify-between gap-2.5 rounded-[10px] border border-line bg-surface px-3.5 py-3 transition-colors hover:border-line-strong">
       <div className="min-w-0 flex-1">{children}</div>
       {actions && <div className="flex shrink-0 gap-1.5">{actions}</div>}
     </div>

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from './AuthProvider';
+import { SkeletonMetricas } from './ui/Skeleton';
 
 function Metric({ num, label }: { num: number; label: string }) {
   return (
@@ -33,6 +34,7 @@ function PerfilPendiente() {
 export function Resumen() {
   const { profile } = useAuth();
   const [m, setM] = useState({ activos: 0, pendientes: 0, foods: 0, exercises: 0 });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
@@ -50,14 +52,17 @@ export function Resumen() {
         foods: foods.count ?? 0,
         exercises: exercises.count ?? 0,
       });
+      setLoading(false);
     })();
   }, []);
+
+  if (loading) return <SkeletonMetricas />;
 
   return (
     <div className="mb-6">
       {profile && !profile.onboarding_completed_at && <PerfilPendiente />}
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="anim-lista grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Metric num={m.activos} label="Productos activos" />
         <Metric num={m.pendientes} label="Pendientes" />
         <Metric num={m.foods} label="Ítems alimentación" />

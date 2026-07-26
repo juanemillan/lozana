@@ -9,6 +9,7 @@ import { SectionTitle, EmptyState } from './ui/SectionTitle';
 import { TimePill, StatusPill } from './ui/Pill';
 import { Button, IconButton } from './ui/Button';
 import { Collapse } from './ui/Collapse';
+import { Skeleton, CargandoTexto } from './ui/Skeleton';
 import { Input, Select, Textarea } from './ui/Field';
 import { Thumb } from './ui/Avatar';
 
@@ -140,10 +141,16 @@ export default function Productos() {
     })();
   }, []);
 
-  if (loading) return <p className="text-[13px] text-ink-soft">Cargando...</p>;
+  if (loading)
+    return (
+      <>
+        <Skeleton filas={4} />
+        <CargandoTexto />
+      </>
+    );
 
   return (
-    <div>
+    <div className="anim-subir">
       <SectionTitle
         action={
           <Button onClick={() => (open ? cerrar() : nuevo())}>
@@ -236,55 +243,57 @@ export default function Productos() {
       {products.length === 0 ? (
         <EmptyState>Nada agregado todavía.</EmptyState>
       ) : (
-        products.map((p) => (
-          <Card
-            key={p.id}
-            actions={
-              <>
-                <IconButton label={`Editar ${p.name}`} onClick={() => editar(p)}>
-                  <Pencil size={13} strokeWidth={2} aria-hidden />
-                </IconButton>
-                <IconButton label={`Eliminar ${p.name}`} onClick={() => deleteProduct(p.id)}>
-                  <X size={13} strokeWidth={2} aria-hidden />
-                </IconButton>
-              </>
-            }
-          >
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <CardName>{p.name}</CardName>
-              <TimePill time={p.time_of_day} />
-              <StatusPill status={p.status} />
-            </div>
+        <div className="anim-lista">
+          {products.map((p) => (
+            <Card
+              key={p.id}
+              actions={
+                <>
+                  <IconButton label={`Editar ${p.name}`} onClick={() => editar(p)}>
+                    <Pencil size={13} strokeWidth={2} aria-hidden />
+                  </IconButton>
+                  <IconButton label={`Eliminar ${p.name}`} onClick={() => deleteProduct(p.id)}>
+                    <X size={13} strokeWidth={2} aria-hidden />
+                  </IconButton>
+                </>
+              }
+            >
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <CardName>{p.name}</CardName>
+                <TimePill time={p.time_of_day} />
+                <StatusPill status={p.status} />
+              </div>
 
-            <CardMeta>
-              {[p.category, p.frequency, p.price != null && `$${p.price}`]
-                .filter(Boolean)
-                .join(' · ')}
-            </CardMeta>
+              <CardMeta>
+                {[p.category, p.frequency, p.price != null && `$${p.price}`]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </CardMeta>
 
-            {p.description && <CardMeta>{p.description}</CardMeta>}
-            {p.notes && <CardNotes>{p.notes}</CardNotes>}
+              {p.description && <CardMeta>{p.description}</CardMeta>}
+              {p.notes && <CardNotes>{p.notes}</CardNotes>}
 
-            <Thumb path={p.image_path} alt={p.name} />
+              <Thumb path={p.image_path} alt={p.name} />
 
-            <label className="mt-2 inline-flex cursor-pointer items-center gap-1.5 font-mono text-[11px] text-ink-soft hover:text-sage-deep">
-              <ImagePlus size={13} strokeWidth={1.75} aria-hidden />
-              {p.image_path ? 'Cambiar foto' : 'Agregar foto'}
-              <input
-                type="file"
-                accept="image/*"
-                className="sr-only"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  e.target.value = '';
-                  if (!file || !user) return;
-                  const path = await uploadImage(file, user.id, 'products');
-                  if (path) updateProduct(p.id, { image_path: path });
-                }}
-              />
-            </label>
-          </Card>
-        ))
+              <label className="mt-2 inline-flex cursor-pointer items-center gap-1.5 font-mono text-[11px] text-ink-soft hover:text-sage-deep">
+                <ImagePlus size={13} strokeWidth={1.75} aria-hidden />
+                {p.image_path ? 'Cambiar foto' : 'Agregar foto'}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    e.target.value = '';
+                    if (!file || !user) return;
+                    const path = await uploadImage(file, user.id, 'products');
+                    if (path) updateProduct(p.id, { image_path: path });
+                  }}
+                />
+              </label>
+            </Card>
+          ))}
+        </div>
       )}
     </div>
   );

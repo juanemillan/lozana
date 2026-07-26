@@ -6,6 +6,7 @@ import { useAuth } from './AuthProvider';
 import { SectionTitle, EmptyState } from './ui/SectionTitle';
 import { Button, IconButton } from './ui/Button';
 import { Collapse } from './ui/Collapse';
+import { Skeleton, CargandoTexto } from './ui/Skeleton';
 import { Input, Textarea } from './ui/Field';
 
 type LogEntry = {
@@ -79,10 +80,16 @@ export default function Bitacora() {
     })();
   }, []);
 
-  if (loading) return <p className="text-[13px] text-ink-soft">Cargando...</p>;
+  if (loading)
+    return (
+      <>
+        <Skeleton filas={3} />
+        <CargandoTexto />
+      </>
+    );
 
   return (
-    <div>
+    <div className="anim-subir">
       <SectionTitle
         action={
           <Button onClick={() => (open ? cerrar() : nueva())}>
@@ -127,24 +134,26 @@ export default function Bitacora() {
       {logs.length === 0 ? (
         <EmptyState>Sin entradas todavía.</EmptyState>
       ) : (
-        logs.map((l) => (
-          <div key={l.id} className="mb-2.5 border-l-2 border-sage py-1 pl-3">
-            <div className="flex items-center justify-between gap-2">
-              <span className="font-mono text-[11px] text-sage-deep tabular-nums">
-                {l.entry_date}
-              </span>
-              <div className="flex shrink-0 gap-1.5">
-                <IconButton label="Editar entrada" onClick={() => editar(l)}>
-                  <Pencil size={13} strokeWidth={2} aria-hidden />
-                </IconButton>
-                <IconButton label="Eliminar entrada" onClick={() => deleteLog(l.id)}>
-                  <X size={13} strokeWidth={2} aria-hidden />
-                </IconButton>
+        <div className="anim-lista">
+          {logs.map((l) => (
+            <div key={l.id} className="mb-2.5 border-l-2 border-sage py-1 pl-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-mono text-[11px] text-sage-deep tabular-nums">
+                  {l.entry_date}
+                </span>
+                <div className="flex shrink-0 gap-1.5">
+                  <IconButton label="Editar entrada" onClick={() => editar(l)}>
+                    <Pencil size={13} strokeWidth={2} aria-hidden />
+                  </IconButton>
+                  <IconButton label="Eliminar entrada" onClick={() => deleteLog(l.id)}>
+                    <X size={13} strokeWidth={2} aria-hidden />
+                  </IconButton>
+                </div>
               </div>
+              <p className="mt-0.5 text-[13px]">{l.text}</p>
             </div>
-            <p className="mt-0.5 text-[13px]">{l.text}</p>
-          </div>
-        ))
+          ))}
+        </div>
       )}
     </div>
   );

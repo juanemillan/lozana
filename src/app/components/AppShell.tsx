@@ -42,7 +42,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* md:pl-56 deja el espacio de la sidebar; pb-24 el de la barra inferior. */}
       <div className="md:pl-56">
-        <div className="mx-auto max-w-[920px] px-5 pt-7 pb-24 md:pb-14">
+        {/* pb-32 deja hueco para la barra inferior, ahora más alta. */}
+        <div className="mx-auto max-w-[920px] px-5 pt-7 pb-32 md:pb-14">
           <header
             style={{ viewTransitionName: 'lz-encabezado' }}
             className="mb-5 flex items-baseline justify-between gap-3 border-b-2 border-ink pb-3.5"
@@ -52,11 +53,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
             <div className="flex shrink-0 items-center gap-2 self-center">
               <DateStamp />
+              {/* En escritorio el acceso al perfil vive al pie de la sidebar,
+                  así que aquí solo aparece en móvil. */}
               <Link
                 href="/perfil"
                 aria-label="Perfil"
                 aria-current={pathname === '/perfil' ? 'page' : undefined}
-                className="rounded-full transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sage"
+                className="rounded-full transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sage md:hidden"
               >
                 <Avatar
                   path={profile?.avatar_path ?? null}

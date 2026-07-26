@@ -163,16 +163,35 @@ Decisiones que conviene no deshacer sin querer:
   Mientras el corte sea consistente, el autocompletado agrupa bien.
 
 ## Campos de producto
-Además de los originales: `brand`, `product_line`, `purchase_url`, `size_ml`, `pao_months`,
-`expires_at`, `repurchase`.
+Además de los originales: `brand`, `product_line`, `purchase_url`, `pao_months`, `expires_at`,
+`repurchase`, `currency_code`, `size_value`, `size_unit`.
 - `repurchase` admite **null a propósito**: "todavía no lo decidí" no es lo mismo que "no lo
   repetiría", y esa distinción importa para el calendario y las notificaciones.
 - `pao_months` se combina con `opened_at` (que existía sin usarse desde `001`). En cosmética el
   vencimiento que manda suele ser el de apertura, no el impreso: un retinal se oxida en meses
   aunque la fecha impresa diga dos años.
-- `size_ml` habilita el precio por mililitro, que es la única cifra comparable entre productos
-  de distinto tamaño.
+- `currency_code` es ISO 4217 de tres letras. **Obligatorio solo si hay precio**, y con un
+  constraint `NOT VALID`: se exige al insertar y al editar, pero no se les inventa moneda a los
+  registros anteriores a `007`. El formato lo hace `Intl.NumberFormat`, que ya sabe que CLP y
+  JPY no llevan decimales.
+- `size_value` + `size_unit` (ml, g, unidad) reemplazan a `size_ml`. **ml y g no son
+  equivalentes**: son magnitudes distintas y el precio por unidad ya no las mezcla.
+  La unidad es obligatoria solo si hay cantidad.
+- `size_ml` quedó **obsoleta** tras `007`, que trasladó sus valores a `size_value` con unidad
+  `ml`. La app ya no la lee ni la escribe; se conserva como respaldo del traslado y se puede
+  eliminar en una migración posterior cuando esté confirmado.
 - Se llama `product_line` y no `line` porque `line` es un tipo geométrico de Postgres.
+
+## Foto de producto
+Se elige dentro del formulario, en alta y en edición, con previsualización local antes de
+guardar (`URL.createObjectURL`). **No se sube al seleccionar.** El orden importa: en un alta no
+existe todavía el id al que asociar la imagen, así que primero se guarda el producto, se toma su
+id con `.select('id').single()`, y recién entonces se sube. Si no se elige foto nueva,
+`image_path` no se toca.
+
+Si el producto se guarda pero la subida falla, el formulario **se cierra igual** —el producto ya
+existe y reintentar crearía un duplicado— y el aviso explica qué faltó. El control de foto que
+antes vivía en la tarjeta se quitó: duplicaba la acción y subía sin confirmación.
 
 ---
 
@@ -190,6 +209,7 @@ Tres estados distintos, que conviene no confundir:
 | `004_profile_storage.sql` | Campos de perfil, bucket privado, `image_url`→`image_path` | ✅ aplicada |
 | `005_producto_compra_vencimiento.sql` | brand, purchase_url, size_ml, pao_months, expires_at, repurchase | ✅ aplicada |
 | `006_producto_linea.sql` | product_line | ✅ aplicada |
+| `007_producto_moneda_unidad.sql` | currency_code, size_value, size_unit | ✅ aplicada |
 
 **Cómo se comprobó** (2026-07-26, con la anon key desde fuera de la app):
 - Existencia de columnas: PostgREST devuelve *400 column does not exist* aunque RLS oculte las
@@ -199,6 +219,10 @@ Tres estados distintos, que conviene no confundir:
 - **`003` no es verificable así**: su efecto observable es el `NOT NULL` sobre `user_id`, que
   se leería del esquema OpenAPI de PostgREST, y ese endpoint exige autenticación (401 con la
   anon key). Queda como reportada por el usuario, no confirmada.
+- **`007`**: sus tres columnas responden 200 y el usuario confirmó haber corrido el archivo.
+  Los **constraints no son verificables desde fuera** (no hay forma de leer `pg_constraint` con
+  la anon key, y RLS impide provocar una violación a propósito), así que esa parte queda
+  respaldada por la ejecución, no por comprobación.
 
 ---
 

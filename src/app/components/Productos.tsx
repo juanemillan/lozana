@@ -1,7 +1,14 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { X, Plus, Pencil, ImagePlus, ExternalLink } from 'lucide-react';
-import { calcularVencimiento, etiquetaVencimiento, precioPorUnidad } from '@/lib/vencimiento';
+import { X, Plus, Pencil, ImagePlus, Camera, ExternalLink } from 'lucide-react';
+import { calcularVencimiento, etiquetaVencimiento } from '@/lib/vencimiento';
+import {
+  MONEDAS,
+  UNIDADES,
+  formatearPrecio,
+  formatearTamano,
+  precioPorUnidad,
+} from '@/lib/precio';
 import { supabase } from '@/lib/supabase';
 import { uploadImage } from '@/lib/uploadImage';
 import { useAuth } from './AuthProvider';
@@ -37,7 +44,9 @@ type Product = {
   category: string;
   description: string | null;
   price: number | null;
-  size_ml: number | null;
+  currency_code: string | null;
+  size_value: number | null;
+  size_unit: string | null;
   purchase_url: string | null;
   opened_at: string | null;
   pao_months: number | null;
@@ -59,7 +68,9 @@ const EMPTY: Draft = {
   category: CATEGORIES[0],
   description: '',
   price: null,
-  size_ml: null,
+  currency_code: 'CLP',
+  size_value: null,
+  size_unit: 'ml',
   purchase_url: '',
   opened_at: null,
   pao_months: null,
@@ -99,6 +110,10 @@ export default function Productos() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   const [form, setForm] = useState<Draft>(EMPTY);
+  const [foto, setFoto] = useState<File | null>(null);
+  const [previo, setPrevio] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
+  const [guardando, setGuardando] = useState(false);
 
   async function fetchProducts() {
     const { data, error } = await supabase
@@ -129,7 +144,11 @@ export default function Productos() {
       category: p.category,
       description: p.description ?? '',
       price: p.price,
-      size_ml: p.size_ml,
+      // Sin `?? 'CLP'`: inventarle moneda a un registro anterior a 007 sería
+      // afirmar un dato que nadie introdujo.
+      currency_code: p.currency_code,
+      size_value: p.size_value,
+      size_unit: p.size_unit,
       purchase_url: p.purchase_url ?? '',
       opened_at: p.opened_at,
       pao_months: p.pao_months,
@@ -147,11 +166,42 @@ export default function Productos() {
     setOpen(false);
     setEditing(null);
     setForm(EMPTY);
+    soltarPrevio();
+    setFoto(null);
+  }
+
+  /** El blob de la previsualización ocupa memoria hasta que se revoca. */
+  function soltarPrevio() {
+    setPrevio((url) => {
+      if (url) URL.revokeObjectURL(url);
+      return null;
+    });
+  }
+
+  function elegirFoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    soltarPrevio();
+    setFoto(file);
+    setPrevio(URL.createObjectURL(file));
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!user || !form.name.trim()) return;
+    if (!user || !form.name.trim() || guardando) return;
+
+    // Mismas reglas que los constraints de 007, comprobadas antes para dar un
+    // mensaje en castellano en vez del error crudo de Postgres.
+    if (form.price != null && !form.currency_code) {
+      return setAviso('Elige la moneda del precio.');
+    }
+    if (form.size_value != null && !form.size_unit) {
+      return setAviso('Elige la unidad del tamaño.');
+    }
+
+    setGuardando(true);
+    setAviso(null);
 
     // Las cadenas vacías se guardan como null: en la base "sin dato" y "cadena
     // vacía" son cosas distintas, y mezclarlas complica cualquier consulta.
@@ -164,26 +214,47 @@ export default function Productos() {
       notes: form.notes?.trim() || null,
     };
 
-    const { error } = editing
-      ? await supabase.from('products').update(payload).eq('id', editing)
-      : await supabase.from('products').insert({ ...payload, user_id: user.id });
-
-    if (error) console.error(error);
-    else {
-      await fetchProducts();
-      cerrar();
+    // La foto se sube después de guardar, porque en un alta todavía no hay id
+    // al que asociarla. Si no se eligió ninguna, `image_path` no se toca.
+    let id = editing;
+    if (editing) {
+      const { error } = await supabase.from('products').update(payload).eq('id', editing);
+      if (error) return fallar(error.message);
+    } else {
+      const { data, error } = await supabase
+        .from('products')
+        .insert({ ...payload, user_id: user.id })
+        .select('id')
+        .single();
+      if (error) return fallar(error.message);
+      id = data.id;
     }
+
+    let fotoFallo = false;
+    if (foto && id) {
+      const path = await uploadImage(foto, user.id, 'products');
+      const { error } = path
+        ? await supabase.from('products').update({ image_path: path }).eq('id', id)
+        : { error: true };
+      fotoFallo = Boolean(error);
+    }
+
+    await fetchProducts();
+    cerrar();
+    setGuardando(false);
+    // El producto sí quedó guardado: cerrar el formulario evita que reintentar
+    // cree un duplicado, y el aviso explica qué faltó.
+    setAviso(fotoFallo ? 'El producto se guardó, pero la foto no se pudo subir. Edítalo para reintentar.' : null);
   }
 
-  async function updateProduct(id: string, updates: Partial<Product>) {
-    const { error } = await supabase.from('products').update(updates).eq('id', id);
-    if (error) console.error(error);
-    else fetchProducts();
+  function fallar(mensaje: string) {
+    setGuardando(false);
+    setAviso(`No se pudo guardar: ${mensaje}`);
   }
 
   async function deleteProduct(id: string) {
     const { error } = await supabase.from('products').delete().eq('id', id);
-    if (error) console.error(error);
+    if (error) setAviso(`No se pudo eliminar: ${error.message}`);
     else fetchProducts();
   }
 
@@ -228,6 +299,17 @@ export default function Productos() {
       >
         Productos
       </SectionTitle>
+
+      {/* Fuera del Collapse: un fallo al subir la foto cierra el formulario
+          (el producto ya se guardó) y el mensaje tiene que seguir visible. */}
+      {aviso && (
+        <p
+          role="alert"
+          className="mb-3 rounded-[10px] border border-plum bg-plum-tint px-3.5 py-2.5 text-[13px] text-plum-deep"
+        >
+          {aviso}
+        </p>
+      )}
 
       <Collapse open={open}>
         <form
@@ -293,17 +375,54 @@ export default function Productos() {
             <Input
               value={form.description ?? ''}
               onChange={(e) => set('description', e.target.value)}
-              placeholder="Descripción"
+              placeholder="Descripción: qué es. Ej: sérum facial con retinal"
               aria-label="Descripción"
               className="sm:col-span-2"
             />
             <Textarea
               value={form.notes ?? ''}
               onChange={(e) => set('notes', e.target.value)}
-              placeholder="Notas"
+              placeholder="Notas: cómo te va con él. Ej: empezar dos noches por semana y observar tolerancia"
               aria-label="Notas"
               className="sm:col-span-2"
             />
+          </div>
+
+          <div className="mt-4 flex items-center gap-3 border-t border-line pt-3">
+            {previo ? (
+              <span className="block size-14 shrink-0 overflow-hidden rounded-md border border-line bg-paper">
+                {/* eslint-disable-next-line @next/next/no-img-element -- blob local, no pasa por el optimizador */}
+                <img src={previo} alt="" className="size-full object-cover" />
+              </span>
+            ) : (
+              <Thumb path={editing ? (products.find((p) => p.id === editing)?.image_path ?? null) : null} alt="" />
+            )}
+
+            <div className="flex flex-wrap gap-x-3 gap-y-1">
+              <label className="inline-flex cursor-pointer items-center gap-1.5 font-mono text-[11px] text-ink-soft transition-colors hover:text-sage-deep">
+                <ImagePlus size={13} strokeWidth={1.75} aria-hidden />
+                {previo ? 'Cambiar foto' : 'Subir foto'}
+                <input type="file" accept="image/*" className="sr-only" onChange={elegirFoto} />
+              </label>
+              {/* capture solo lo honra el móvil; en escritorio abriría el mismo
+                  explorador que el botón de al lado. */}
+              <label className="inline-flex cursor-pointer items-center gap-1.5 font-mono text-[11px] text-ink-soft transition-colors hover:text-sage-deep md:hidden">
+                <Camera size={13} strokeWidth={1.75} aria-hidden />
+                Tomar foto
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="sr-only"
+                  onChange={elegirFoto}
+                />
+              </label>
+              {previo && (
+                <p className="w-full font-mono text-[11px] text-ink-soft">
+                  Se sube al guardar.
+                </p>
+              )}
+            </div>
           </div>
 
           <p className="mt-4 mb-2 border-t border-line pt-3 font-mono text-[11px] uppercase tracking-wide text-ink-soft">
@@ -311,24 +430,53 @@ export default function Productos() {
           </p>
 
           <div className="mb-2 grid gap-2 sm:grid-cols-2">
-            <Input
-              type="number"
-              step="0.01"
-              min="0"
-              value={form.price ?? ''}
-              onChange={(e) => set('price', aNumero(e.target.value))}
-              placeholder="Precio"
-              aria-label="Precio"
-            />
-            <Input
-              type="number"
-              step="0.1"
-              min="0"
-              value={form.size_ml ?? ''}
-              onChange={(e) => set('size_ml', aNumero(e.target.value))}
-              placeholder="Tamaño en ml o g"
-              aria-label="Tamaño"
-            />
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={form.price ?? ''}
+                onChange={(e) => set('price', aNumero(e.target.value))}
+                placeholder="Precio"
+                aria-label="Precio"
+                className="flex-1"
+              />
+              <Select
+                value={form.currency_code ?? ''}
+                onChange={(e) => set('currency_code', e.target.value || null)}
+                aria-label="Moneda"
+                className="w-20 shrink-0 px-1.5"
+              >
+                <option value="">—</option>
+                {MONEDAS.map((m) => (
+                  <option key={m}>{m}</option>
+                ))}
+              </Select>
+            </div>
+
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                step="0.1"
+                min="0"
+                value={form.size_value ?? ''}
+                onChange={(e) => set('size_value', aNumero(e.target.value))}
+                placeholder="Tamaño"
+                aria-label="Tamaño"
+                className="flex-1"
+              />
+              <Select
+                value={form.size_unit ?? ''}
+                onChange={(e) => set('size_unit', e.target.value || null)}
+                aria-label="Unidad"
+                className="w-24 shrink-0 px-1.5"
+              >
+                <option value="">—</option>
+                {UNIDADES.map((u) => (
+                  <option key={u}>{u}</option>
+                ))}
+              </Select>
+            </div>
             <Input
               type="url"
               value={form.purchase_url ?? ''}
@@ -385,10 +533,12 @@ export default function Productos() {
             </div>
           </div>
           <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={cerrar}>
+            <Button variant="ghost" onClick={cerrar} disabled={guardando}>
               Cancelar
             </Button>
-            <Button type="submit">{editing ? 'Guardar cambios' : 'Guardar'}</Button>
+            <Button type="submit" disabled={guardando}>
+              {guardando ? 'Guardando...' : editing ? 'Guardar cambios' : 'Guardar'}
+            </Button>
           </div>
         </form>
       </Collapse>
@@ -422,9 +572,9 @@ export default function Productos() {
                 {[
                   p.category,
                   p.frequency,
-                  p.price != null && `$${p.price}`,
-                  p.size_ml && `${p.size_ml}ml`,
-                  precioPorUnidad(p.price, p.size_ml),
+                  formatearPrecio(p.price, p.currency_code),
+                  formatearTamano(p.size_value, p.size_unit),
+                  precioPorUnidad(p.price, p.currency_code, p.size_value, p.size_unit),
                 ]
                   .filter(Boolean)
                   .join(' · ')}
@@ -445,24 +595,9 @@ export default function Productos() {
                 </a>
               )}
 
+              {/* La foto se gestiona desde el formulario de edición: tenerla
+                  también aquí duplicaba el control y subía sin confirmar. */}
               <Thumb path={p.image_path} alt={p.name} />
-
-              <label className="mt-2 inline-flex cursor-pointer items-center gap-1.5 font-mono text-[11px] text-ink-soft hover:text-sage-deep">
-                <ImagePlus size={13} strokeWidth={1.75} aria-hidden />
-                {p.image_path ? 'Cambiar foto' : 'Agregar foto'}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="sr-only"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    e.target.value = '';
-                    if (!file || !user) return;
-                    const path = await uploadImage(file, user.id, 'products');
-                    if (path) updateProduct(p.id, { image_path: path });
-                  }}
-                />
-              </label>
             </Card>
           ))}
         </div>

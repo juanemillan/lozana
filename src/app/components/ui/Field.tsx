@@ -13,7 +13,10 @@ export function Input({ className = '', ...props }: InputHTMLAttributes<HTMLInpu
 }
 
 export function Select({ className = '', ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
-  return <select className={`${base} appearance-none pr-8 ${className}`} {...props} />;
+  // Sin `appearance-none`: reservaba 32px a la derecha para una flecha que nadie
+  // dibujaba, así que apretaba el texto y además quitaba la única señal visual
+  // de que el campo es un desplegable.
+  return <select className={`${base} ${className}`} {...props} />;
 }
 
 export function Textarea({ className = '', ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {

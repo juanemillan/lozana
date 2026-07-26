@@ -36,7 +36,11 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
       lang="es"
       className={`${fraunces.variable} ${inter.variable} ${plexMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full">
+      {/* Las extensiones del navegador escriben atributos en el body antes de
+          que React hidrate (ColorZilla pone cz-shortcut-listen, por ejemplo).
+          Solo afecta a este elemento, no a su contenido: un desajuste real
+          dentro del árbol se sigue reportando. */}
+      <body className="min-h-full" suppressHydrationWarning>
         <AuthProvider>
           <AppShell>{children}</AppShell>
         </AuthProvider>

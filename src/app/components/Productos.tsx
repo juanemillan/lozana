@@ -430,7 +430,10 @@ export default function Productos() {
           </p>
 
           <div className="mb-2 grid gap-2 sm:grid-cols-2">
-            <div className="flex gap-2">
+            {/* Grid y no flex: Input y Select traen w-full en su clase base, que
+                le gana a cualquier w-* de aquí. Como pista de grid, ese w-full
+                pasa a ser el 100% de la pista y el ancho lo manda el track. */}
+            <div className="grid grid-cols-[1fr_5rem] gap-2">
               <Input
                 type="number"
                 step="0.01"
@@ -439,13 +442,12 @@ export default function Productos() {
                 onChange={(e) => set('price', aNumero(e.target.value))}
                 placeholder="Precio"
                 aria-label="Precio"
-                className="flex-1"
               />
               <Select
                 value={form.currency_code ?? ''}
                 onChange={(e) => set('currency_code', e.target.value || null)}
                 aria-label="Moneda"
-                className="w-20 shrink-0 px-1.5"
+                className="px-1.5"
               >
                 <option value="">—</option>
                 {MONEDAS.map((m) => (
@@ -454,7 +456,7 @@ export default function Productos() {
               </Select>
             </div>
 
-            <div className="flex gap-2">
+            <div className="grid grid-cols-[1fr_5rem] gap-2">
               <Input
                 type="number"
                 step="0.1"
@@ -463,13 +465,12 @@ export default function Productos() {
                 onChange={(e) => set('size_value', aNumero(e.target.value))}
                 placeholder="Tamaño"
                 aria-label="Tamaño"
-                className="flex-1"
               />
               <Select
                 value={form.size_unit ?? ''}
                 onChange={(e) => set('size_unit', e.target.value || null)}
                 aria-label="Unidad"
-                className="w-24 shrink-0 px-1.5"
+                className="px-1.5"
               >
                 <option value="">—</option>
                 {UNIDADES.map((u) => (
